@@ -1,0 +1,2537 @@
+:root {
+  --border: #e0e0e0;
+  --header-bg: #f6f7f8;
+  --header-fg: #5f6368;
+  --accent: #1a73e8;
+  --accent-bg: #e8f0fe;
+  --text: #202124;
+  --danger: #d93025;
+  --success: #188038;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+/* The hidden attribute must always win, even over elements whose
+   class sets an explicit display (flex/block/etc). Without this,
+   author rules like ".dropzone { display: flex }" override the
+   browser's default "[hidden] { display: none }" and the element
+   never visually disappears even though hidden=true. */
+[hidden] {
+  display: none !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  color: var(--text);
+  font-size: 13px;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Toolbar ---------- */
+#toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+.file-name {
+  color: var(--header-fg);
+  font-size: 12px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: #f1f3f4;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) { background: #1765cc; }
+
+.btn-success {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+.btn-success:hover:not(:disabled) { background: #146c2e; }
+
+.icon { font-size: 13px; }
+
+.select-format {
+  padding: 6px 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.btn.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- Formula bar ---------- */
+.formula-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.formula-bar-ref {
+  min-width: 56px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--header-fg);
+  background: var(--header-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-align: center;
+  user-select: none;
+}
+
+.formula-bar-fx {
+  font-style: italic;
+  font-size: 13px;
+  color: var(--header-fg);
+  user-select: none;
+}
+
+.formula-bar-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  background: #fff;
+  outline: none;
+}
+
+.formula-bar-input:focus {
+  border-color: var(--accent);
+}
+
+.formula-bar-input:disabled {
+  background: #fafafa;
+  color: var(--header-fg);
+}
+
+/* ---------- Grid ---------- */
+.grid-wrapper {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.grid-scroll {
+  flex: 1;
+  overflow: auto;
+}
+
+#grid {
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+#grid th, #grid td {
+  border: 1px solid var(--border);
+  padding: 0;
+  min-width: 28px;
+  height: 26px;
+}
+
+#grid td {
+  padding: 3px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  outline: none;
+  cursor: cell;
+  user-select: none; /* a plain click/drag selects cells, it shouldn't also highlight their text */
+  position: relative;
+}
+
+#grid td.editing {
+  cursor: text;
+  user-select: text;
+  background: #fff;
+  /* Let a cell grow to show multi-line content (Alt+Enter/Shift+Enter)
+     while it's actively being edited. */
+  white-space: pre-wrap;
+  overflow: visible;
+  text-overflow: clip;
+  height: auto;
+  min-height: 26px;
+  vertical-align: top;
+}
+
+#grid td:focus,
+#grid td.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--accent-bg);
+}
+
+#grid td.range-selected {
+  background: var(--accent-bg);
+}
+
+/* Formulas aren't evaluated by this editor — only the cached final value is
+   shown (see editor.js). This subtle tint + corner flag is the only cue
+   that a cell's value actually comes from a formula, not a typed literal. */
+#grid td.formula-cell {
+  background: #fef7e0;
+}
+#grid td.formula-cell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-width: 6px 6px 0 0;
+  border-style: solid;
+  border-color: #e0a63c transparent transparent transparent;
+  pointer-events: none;
+}
+/* Selection state should still read clearly over the formula tint. */
+#grid td.formula-cell.selected,
+#grid td.formula-cell.range-selected,
+#grid td.formula-cell:focus {
+  background: var(--accent-bg);
+}
+#grid td.formula-cell.editing {
+  background: #fff;
+}
+
+/* Formula cells whose value HyperFormula couldn't (re)compute — an
+   unrecognized function, or formula text it can't even parse, e.g. Google
+   Sheets' __xludf.DUMMYFUNCTION export artifact. Shown with a distinct
+   tint from a normal formula cell so it's clear the value on screen is
+   just whatever was cached in the file, not a live recalculation. No
+   border override here — a pale tint plus the corner flag is enough to
+   read as distinct without fighting the grid's own hairlines. */
+#grid td.engine-unsupported-cell {
+  background: #fff7ff;
+}
+#grid td.engine-unsupported-cell::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-width: 6px 6px 0 0;
+  border-style: solid;
+  border-color: #ba71be transparent transparent transparent;
+  pointer-events: none;
+}
+#grid td.engine-unsupported-cell.selected,
+#grid td.engine-unsupported-cell.range-selected,
+#grid td.engine-unsupported-cell:focus {
+  background: var(--accent-bg);
+}
+#grid td.engine-unsupported-cell.editing {
+  background: #fff;
+}
+
+/* corner + headers */
+#grid th {
+  position: sticky;
+  background: var(--header-bg);
+  color: var(--header-fg);
+  font-weight: 500;
+  text-align: center;
+  z-index: 2;
+  user-select: none;
+}
+
+#grid thead th {
+  top: 0;
+  z-index: 3;
+}
+
+#grid th.corner {
+  left: 0;
+  z-index: 4;
+  min-width: 44px;
+  width: 44px;
+}
+
+#grid tbody th {
+  left: 0;
+  z-index: 2;
+  min-width: 44px;
+  width: 44px;
+}
+
+.header-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  gap: 4px;
+}
+
+.header-cell.header-selected {
+  background: var(--accent);
+  color: #fff;
+}
+
+.col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+.col-resize-handle:hover,
+.col-resize-handle.resizing {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.row-resize-handle {
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 6px;
+  cursor: row-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+.row-resize-handle:hover,
+.row-resize-handle.resizing {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+/* ---------- Sheet tabs ---------- */
+.sheet-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px 10px;
+  background: var(--header-bg);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sheet-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px 5px 12px;
+  font-size: 12px;
+  border-radius: 5px 5px 0 0;
+  background: transparent;
+  color: var(--header-fg);
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.sheet-tab:hover { background: #ececec; }
+
+.sheet-tab.active {
+  background: #fff;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-bottom-color: #fff;
+  font-weight: 600;
+}
+
+.sheet-tab-label { outline: none; }
+
+/* Tab-bar tools: "+" add and "≡" manage-sheets, pinned at the left */
+.sheet-tab-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-right: 6px;
+  padding: 2px 6px 2px 2px;
+  border-right: 1px solid rgba(135, 148, 161, 0.28);
+}
+
+/* Tab strip: scrolls horizontally with NO visible scrollbar (wheel, ‹ ›
+   buttons, or trackpad swipe). */
+.sheet-tabs-scroll {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0; /* room so focus rings / outlines aren't clipped */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sheet-tabs-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.sheet-tab-arrows {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: 6px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(135, 148, 161, 0.28);
+}
+
+.sheet-tab-arrow .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.sheet-tab-tool,
+.sheet-tab-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--header-fg);
+  cursor: pointer;
+}
+
+.sheet-tab-tool:hover:not(:disabled),
+.sheet-tab-arrow:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.sheet-tab-tool .ui-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.sheet-tab-tool.sheet-list-btn.active {
+  background: rgba(0, 0, 0, 0.09);
+  color: var(--accent);
+}
+
+.sheet-tab-tool:disabled,
+.sheet-tab-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ---------- Icon buttons (title/tab rename) ---------- */
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: var(--header-fg);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  line-height: 1;
+
+}
+.icon-btn:hover { background: #f1f3f4; color: var(--accent); }
+
+.file-name[contenteditable="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  background: #fff;
+  border-radius: 4px;
+  padding: 1px 5px;
+  cursor: text;
+  white-space: nowrap;
+}
+
+/* ---------- Floating nav (jump to top / last data row) ---------- */
+.float-nav {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 30;
+}
+
+.float-nav-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.61);
+  color: var(--header-fg);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.float-nav-btn:hover {
+  opacity: 1;
+  background: #fff;
+}
+
+/* ---------- Modal (password prompt) ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px 22px;
+  width: 320px;
+  max-width: 90vw;
+}
+
+.modal-box h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.modal-box p {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--header-fg);
+  line-height: 1.45;
+}
+
+.modal-box input[type="password"] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+}
+
+.modal-error {
+  color: var(--danger) !important;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  bottom: 46px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #202124;
+  color: #fff;
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  z-index: 50;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ---------- macOS Glass aesthetic (visual-only) ---------- *
+ * PERF: no blur-behind / frosted-glass filters anywhere and no
+ * translucent panel or grid backgrounds — every surface is a flat opaque
+ * colour flattened from the old glass look. The blur layers forced a GPU
+ * re-render of every layer on tab switch (1-2 s lag). Do not re-add. */
+:root {
+  --border: rgba(120, 132, 145, 0.20);
+  --header-bg: #f5f8fb;
+  --header-fg: #64707d;
+  --accent: #0a7a59;
+  --accent-bg: #e6f2ee;
+  --text: #202a33;
+  --danger: #c54a43;
+  --success: #0a7a59;
+}
+
+html, body {
+  background: #f6f8fa;
+}
+
+body {
+  padding: 8px;
+  gap: 6px;
+}
+
+#toolbar {
+  position: relative;
+  z-index: 10;
+  min-height: 48px;
+  padding: 7px 10px;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  border-radius: 14px;
+  background: #f9fbfd;
+}
+
+.toolbar-group {
+  gap: 5px;
+}
+
+.divider {
+  height: 22px;
+  margin: 0 3px;
+  background: rgba(112, 124, 136, 0.18);
+}
+
+.file-name {
+  color: #4e5b67;
+  font-size: 12px;
+  max-width: 240px;
+}
+
+.btn,
+.select-format {
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid rgba(135, 148, 161, 0.18);
+  border-radius: 9px;
+  background: #fcfdfe;
+  color: #34414c;
+}
+
+.btn:hover:not(:disabled) {
+  background: #fefeff;
+  border-color: rgba(120, 134, 148, 0.25);
+}
+
+.btn-primary {
+  color: #fff;
+  background: #3583eb;
+  border-color: rgba(26, 115, 232, 0.58);
+}
+
+.btn-primary:hover:not(:disabled) { background: #206bce; }
+
+.btn-success {
+  color: #fff;
+  background: #1d8466;
+  border-color: rgba(10, 122, 89, 0.52);
+}
+
+.btn-success:hover:not(:disabled) { background: #0d6c51; }
+
+.select-format {
+  appearance: auto;
+  padding-left: 9px;
+  padding-right: 9px;
+}
+
+/* Keep the formula bar as a second, quieter glass layer. */
+.formula-bar {
+  min-height: 38px;
+  padding: 5px 8px;
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 11px;
+  background: #f9fbfd;
+}
+
+.formula-bar-ref {
+  min-width: 48px;
+  padding: 4px 7px;
+  border: 1px solid rgba(135, 148, 161, 0.16);
+  border-radius: 7px;
+  background: #fcfdfe;
+  color: #687582;
+}
+
+.formula-bar-input {
+  padding: 6px 9px;
+  border: 1px solid rgba(135, 148, 161, 0.16);
+  border-radius: 7px;
+  background: #fcfdfe;
+}
+
+.formula-bar-input:focus {
+  border-color: rgba(10, 122, 89, 0.55);
+  outline: 2px solid rgba(10, 122, 89, 0.18);
+  outline-offset: 0;
+}
+
+.formula-bar-input:disabled {
+  background: #f9fbfd;
+}
+
+.grid-wrapper {
+  min-height: 0;
+  border: 1px solid rgba(255,255,255,0.82);
+  border-radius: 14px;
+  background: #f8fbfd;
+  overflow: hidden;
+}
+
+.grid-scroll {
+  background: #fafcfe;
+}
+
+#grid th, #grid td {
+  border-color: rgba(150, 163, 175, 0.16);
+}
+
+#grid td {
+  background: #fbfdfe;
+}
+
+/* Cells filled by an array formula's spill: a paler amber than the formula
+   cell itself and no corner triangle. Declared before the editing/selected
+   rules below (same specificity) so selection highlights still win. */
+#grid td.spill-cell {
+  background: #fcfaf0;
+}
+
+#grid td.editing {
+  background: #feffff;
+}
+
+#grid td:focus,
+#grid td.selected {
+  outline-color: var(--accent);
+  background: #e6f1f0;
+}
+
+#grid td.range-selected {
+  background: #eaf3f2;
+}
+
+#grid td.formula-cell {
+  background: #fdf9eb;
+}
+
+#grid td.formula-cell.selected,
+#grid td.formula-cell.range-selected,
+#grid td.formula-cell:focus {
+  background: #e6f1f0;
+}
+
+#grid td.formula-cell.editing {
+  background: #feffff;
+}
+
+#grid td.engine-unsupported-cell {
+  background: #fef6ff;
+}
+
+#grid td.engine-unsupported-cell.selected,
+#grid td.engine-unsupported-cell.range-selected,
+#grid td.engine-unsupported-cell:focus {
+  background: #e6f1f0;
+}
+
+#grid td.engine-unsupported-cell.editing {
+  background: #feffff;
+}
+
+#grid th {
+  background: #f4f8fb;
+  color: #687582;
+}
+
+.header-cell.header-selected {
+  background: #218769;
+}
+
+.col-resize-handle:hover,
+.col-resize-handle.resizing,
+.row-resize-handle:hover,
+.row-resize-handle.resizing {
+  background: var(--accent);
+}
+
+.sheet-tabs {
+  min-height: 36px;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255,255,255,0.76);
+  border-radius: 11px;
+  background: #f9fbfd;
+}
+
+.sheet-tab {
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.sheet-tab:hover {
+  background: #fdfefe;
+}
+
+.sheet-tab.active {
+  border: 1px solid rgba(135,148,161,0.14);
+  border-bottom-color: rgba(135,148,161,0.14);
+  background: #fefeff;
+  color: var(--accent);
+}
+
+.icon-btn:hover {
+  background: #fdfefe;
+  color: var(--accent);
+}
+
+.file-name[contenteditable="true"] {
+  background: #fefeff;
+  border-radius: 7px;
+}
+
+.float-nav {
+  right: 18px;
+  gap: 7px;
+}
+
+.float-nav-btn {
+  width: 32px;
+  height: 32px;
+  border-color: rgba(135,148,161,0.16);
+  background: #fdfefe;
+}
+
+.float-nav-btn:hover {
+  background: #ffffff;
+}
+
+.modal-overlay {
+  background: rgba(27, 36, 45, 0.25);
+}
+
+.modal-box {
+  border: 1px solid rgba(255,255,255,0.78);
+  border-radius: 14px;
+  background: #f4f5f6;
+}
+
+.modal-box input[type="password"] {
+  border-color: rgba(135,148,161,0.18);
+  border-radius: 8px;
+  background: #fcfcfc;
+}
+
+.toast {
+  background: #202124;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 9px;
+}
+
+/* ---------- SVG icon treatment (aesthetic only) ---------- */
+.ui-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  display: inline-block;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ui-icon-large {
+  width: 42px;
+  height: 42px;
+  stroke-width: 1.45;
+}
+.btn .ui-icon { opacity: 0.9; }
+.float-nav-btn .ui-icon { width: 16px; height: 16px; }
+.icon-btn .ui-icon { width: 13px; height: 13px; }
+
+/* Ensure icons on colored action buttons remain legible. */
+.btn-primary .ui-icon,
+.btn-success .ui-icon {
+  color: #fff;
+  stroke: currentColor;
+}
+
+/* Standard compact undo/redo arrow geometry. */
+.ui-icon-undo,
+.ui-icon-redo {
+  stroke-width: 1.9;
+}
+
+/* ===== Frosted Glass — pronounced depth variant (aesthetic only) ===== */
+:root {
+  --glass-border: rgba(255,255,255,0.84);
+}
+body {
+  background: #f2f6fa;
+}
+#toolbar {
+  margin: 10px 12px 0;
+  padding: 9px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 15px;
+  background: #f9fbfd;
+}
+.btn, .select-format {
+  border-color: rgba(255,255,255,0.78);
+  background: #fcfdfe;
+}
+.btn:hover:not(:disabled) { background: #fefeff; }
+.btn-primary { background: #3583eb; border-color: rgba(255,255,255,0.48); }
+.btn-success { background: #1d8466; border-color: rgba(255,255,255,0.48); }
+.formula-bar {
+  margin: 7px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 13px;
+  background: #f9fbfd;
+}
+.formula-bar-ref, .formula-bar-input {
+  background: #fcfdfe;
+  border-color: rgba(255,255,255,0.78);
+}
+.grid-wrapper {
+  margin: 0 12px;
+  border-color: rgba(255,255,255,0.88);
+  border-radius: 15px;
+  background: #f8fbfd;
+}
+.grid-scroll { background: #fafcfe; }
+#grid th, #grid td { border-color: rgba(125,145,165,0.13); }
+#grid th { background: #f4f8fb; }
+#grid td { background: #fbfdfe; }
+.sheet-tabs {
+  margin: 7px 12px 10px;
+  border-color: rgba(255,255,255,0.86);
+  border-radius: 13px;
+  background: #f9fbfd;
+}
+
+.float-nav-btn {
+  border-color: rgba(255,255,255,0.82);
+  background: #fdfefe;
+}
+
+
+/* ---------- Empty/new-page shell (layout-only) ---------- */
+/* The homepage reuses the open-mode sheet container; its contents live in the "Home screen" block at the end of this file. */
+.grid-wrapper.home-empty {
+  display: flex;
+}
+
+
+/* ---------- Sheet manager popup (the ≡ button) ---------- *
+ * Rename, delete and drag-to-reorder for every sheet live here. Kept
+ * broad enough for name + 3 icons on one line, with a compact row height
+ * so many sheets are visible at once inside the scroll area. */
+.sheet-manager {
+  position: fixed;
+  z-index: 70;
+  width: 320px;
+  max-width: calc(100vw - 16px);
+  border: 1px solid rgba(135, 148, 161, 0.28);
+  border-radius: 12px;
+  background: #f6f8fa;
+  padding: 6px;
+}
+
+.sheet-manager-list {
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* Reserve room so a scrollbar doesn't sit flush against the cards. */
+  padding-right: 2px;
+}
+
+.sheet-manager-list::-webkit-scrollbar { width: 7px; }
+.sheet-manager-list::-webkit-scrollbar-track { background: transparent; }
+.sheet-manager-list::-webkit-scrollbar-thumb {
+  background: rgba(54, 72, 92, 0.24);
+  border-radius: 4px;
+}
+.sheet-manager-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(54, 72, 92, 0.4);
+}
+
+/* One row per sheet: drag handle · name · rename · delete — all on one
+   compact line so as many sheets as possible fit on screen at once. */
+.sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 38px;
+  padding: 0 6px 0 2px;
+  border: 1px solid rgba(135, 148, 161, 0.20);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  touch-action: none; /* the drag handle owns vertical touch gestures */
+}
+
+.sheet-row:hover {
+  border-color: rgba(135, 148, 161, 0.34);
+  background: #fbfcfd;
+}
+
+.sheet-row.active {
+  border-color: rgba(26, 115, 232, 0.45);
+  background: rgba(26, 115, 232, 0.06);
+}
+
+.sheet-row.active .sheet-row-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* The floating clone while a drag is in progress. */
+.sheet-row.dragging {
+  position: fixed;
+  z-index: 80;
+  cursor: grabbing;
+  opacity: 0.96;
+}
+
+/* Keeps the dragged row's slot in the list flow while it floats. */
+.sheet-row-placeholder {
+  border-radius: 8px;
+  background: rgba(26, 115, 232, 0.08);
+  border: 1.5px dashed rgba(26, 115, 232, 0.35);
+}
+
+.sheet-row-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 100%;
+  flex: 0 0 24px;
+  border: none;
+  background: transparent;
+  color: #9aa6b2;
+  cursor: grab;
+  border-radius: 6px;
+  touch-action: none;
+}
+
+.sheet-row-handle:hover { color: var(--header-fg); background: rgba(0, 0, 0, 0.05); }
+.sheet-row-handle:active { cursor: grabbing; }
+.sheet-row-handle .ui-icon { width: 15px; height: 15px; }
+
+.sheet-row-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--text);
+  outline: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.sheet-row-label[contenteditable="true"] {
+  background: #fff;
+  outline: 1.5px solid var(--accent);
+  cursor: text;
+  white-space: normal;
+}
+
+.sheet-row-edit,
+.sheet-row-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--header-fg);
+  cursor: pointer;
+}
+
+.sheet-row-edit .ui-icon,
+.sheet-row-delete .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.sheet-row-edit:hover { background: rgba(0, 0, 0, 0.07); }
+
+.sheet-row-delete:hover:not(:disabled) {
+  background: rgba(217, 48, 37, 0.10);
+  color: #d93025;
+}
+
+.sheet-row-delete:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+
+/* ---------- Clear-sheet popover (toolbar) ---------- */
+.clear-sheet-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.clear-sheet-wrap .btn.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.clear-sheet-form {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 220px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+  text-align: left;
+}
+
+.clear-sheet-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.clear-sheet-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.clear-sheet-choices .btn {
+  justify-content: center;
+  width: 100%;
+}
+
+.clear-sheet-cancel-btn {
+  align-self: flex-end;
+}
+
+/* Long toasts (e.g. the ARRAYFORMULA save warning) wrap instead of being
+   squeezed into the right half of the window. */
+.toast {
+  width: max-content;
+  max-width: min(92vw, 640px);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Coloured buttons keep their colour on hover. The generic
+   ".btn:hover" rule (declared later, same specificity) was turning them
+   near-white, which made their white label unreadable. */
+.btn-primary:hover:not(:disabled) { background: #206bce; }
+.btn-success:hover:not(:disabled) { background: #0d6c51; }
+
+
+/* ---------- Selection summary chip (far right of the formula bar) ---------- */
+.selection-stats {
+  flex: 0 0 auto;
+  margin-left: 2px;
+}
+
+.selection-stats-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 4px 8px 4px 10px;
+  border: 1px solid rgba(135, 148, 161, 0.22);
+  border-radius: 7px;
+  background: #fcfdfe;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.selection-stats-btn:hover {
+  background: #fff;
+  border-color: rgba(135, 148, 161, 0.4);
+}
+
+.selection-stats-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+
+.selection-stats-label {
+  color: #687582;
+  font-weight: 500;
+}
+
+.selection-stats-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.selection-stats-caret {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  color: #8a949e;
+}
+
+.selection-stats-menu {
+  position: fixed;
+  z-index: 70;
+  min-width: 230px;
+  max-width: min(360px, calc(100vw - 16px));
+  padding: 4px;
+  border: 1px solid rgba(135, 148, 161, 0.28);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.selection-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.selection-stats-row:hover {
+  background: rgba(26, 115, 232, 0.10);
+}
+
+.selection-stats-row.active .selection-stats-row-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.selection-stats-row-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+
+/* ---------- Formula syntax hint (inside the formula bar's input box) ---------- */
+/* The hint sits *inside* the input's border box, on its right. The box keeps
+   its size (nothing shifts when the hint appears); only the input's inner
+   right padding grows so typed text scrolls before it reaches the hint. */
+.formula-bar-field {
+  --fh-w: clamp(200px, 32%, 400px);
+  position: relative;
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.formula-bar-field .formula-bar-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.formula-bar-field.has-hint .formula-bar-input {
+  padding-right: calc(var(--fh-w) + 20px);
+}
+
+.formula-hint {
+  position: absolute;
+  top: 1px;
+  right: 9px;
+  bottom: 1px;
+  width: var(--fh-w);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 10px;
+  cursor: default;
+  user-select: none;
+  overflow: hidden;
+}
+
+.formula-hint.has-content {
+  border-left: 1px solid rgba(135, 148, 161, 0.28);
+}
+
+.fh-syntax,
+.fh-desc {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fh-syntax {
+  font-size: 12px;
+  line-height: 13px;
+  color: #5a6672;
+}
+
+.fh-syntax .fh-fn {
+  font-weight: 600;
+}
+
+.fh-syntax .fh-active {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.fh-desc {
+  font-size: 10.5px;
+  line-height: 12px;
+  color: #6b7783;
+}
+
+/* Not enough room next to the formula text on narrow windows. */
+@media (max-width: 820px) {
+  .formula-hint { display: none !important; }
+  .formula-bar-field.has-hint .formula-bar-input { padding-right: 9px; }
+}
+
+
+
+/* ---------- Multi-line cells and the Clip toggle ---------- */
+/* Cells whose text contains line breaks (editor.js gives them .multiline and
+   an inner span). Default: show every line, and let the row grow to fit; a
+   line that is wider than the column still ends with an ellipsis. */
+#grid td.multiline:not(.editing) {
+  white-space: pre;
+  height: auto;
+}
+#grid:not(.clip-rows) tr.has-multiline td,
+#grid:not(.clip-rows) tr.has-multiline th {
+  vertical-align: top;
+}
+#grid:not(.clip-rows) tr.has-multiline th {
+  height: auto;
+}
+#grid:not(.clip-rows) tr.has-multiline .header-cell {
+  height: auto;
+  min-height: 26px;
+}
+
+/* Clip on (toolbar): every row keeps a single row height; a multi-line cell
+   shows its first line and ends with "…". */
+#grid.clip-rows td.multiline:not(.editing) {
+  white-space: normal;
+  height: 26px;
+}
+#grid.clip-rows td.multiline:not(.editing) > .ml {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  white-space: pre-line;
+}
+
+/* ---------- Export format toggle (XLSX | CSV) ---------- *
+ * Two plain buttons instead of a native <select>: a native dropdown hands
+ * the choice to the OS/browser menu, and the box only shows the new value
+ * once that menu has closed and reported back. Here the click flips the
+ * highlight in the same frame. */
+.format-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  min-height: 30px;
+  border: 1px solid rgba(135, 148, 161, 0.28);
+  border-radius: 9px;
+  background: #fcfdfe;
+  overflow: hidden;
+}
+
+.format-toggle button {
+  padding: 5px 13px;
+  border: 0;
+  background: transparent;
+  color: #5b6772;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.format-toggle button + button {
+  border-left: 1px solid rgba(135, 148, 161, 0.22);
+}
+
+.format-toggle button:hover:not(.active) {
+  background: #f1f4f7;
+}
+
+.format-toggle button.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.format-toggle button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+
+/* ---------- Plain-text / code editor ---------- *
+ * Opened for any file that isn't a spreadsheet. It takes the place of the
+ * grid (and its formula bar / sheet-tab footer / jump buttons), so the whole
+ * swap is driven by one class on <body>: body.mode-text.
+ *
+ * How the editor itself works: a <textarea> (bottom layer) receives all the
+ * typing, selection, scrolling-into-view and undo history natively, but its
+ * own text is transparent. A <pre> sitting exactly on top of it (same font,
+ * padding and wrapping, clicks pass straight through) paints the same text
+ * with syntax colours. Both sit in ONE scroll container and are sized by the
+ * <pre>, so there is nothing to keep in sync while scrolling.
+ * PERF: flat on purpose — no blur, no drop shadows, no colour ramps. */
+#textWrapper,
+#textStatus { display: none; }
+
+body.mode-text #textWrapper,
+body.mode-text #textStatus { display: flex; }
+
+/* Everything that only makes sense for a grid steps aside. */
+body.mode-text .sheet-only,
+body.mode-text #formulaBar,
+body.mode-text #gridWrapper,
+body.mode-text #floatNav,
+body.mode-text #sheetTabs { display: none !important; }
+
+/* Home screen (no file open yet, drop-a-file prompt showing): the
+   spreadsheet toolbar and formula bar are meaningless until there's
+   actually a sheet to act on — plain text files don't use them at all,
+   and even for a spreadsheet there's nothing to undo/delete/add yet. */
+body.mode-home .sheet-tools-group,
+body.mode-home #formulaBar { display: none !important; }
+
+:root {
+  --code-font: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --code-size: 12.5px;
+  --code-line: 20px;
+  --code-pad-y: 12px;
+  --code-pad-x: 16px;
+}
+
+.text-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background: #fbfdfe;
+}
+
+.text-doc {
+  flex: 1 0 auto;
+  display: flex;
+  width: max-content; /* grows with the longest line (no-wrap), and… */
+  min-width: 100%;    /* …never narrower than the window */
+}
+
+.text-stack {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.text-gutter,
+.text-hl,
+.text-input {
+  margin: 0;
+  font: var(--code-size) / var(--code-line) var(--code-font);
+  letter-spacing: 0;
+  font-variant-ligatures: none;
+  tab-size: 4;
+  -moz-tab-size: 4;
+}
+
+.text-gutter {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  flex: 0 0 auto;
+  padding: var(--code-pad-y) 10px var(--code-pad-y) 14px;
+  text-align: right;
+  color: #a3adb8;
+  background: #f6f9fb;
+  border-right: 1px solid rgba(135, 148, 161, 0.16);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.text-hl,
+.text-input {
+  padding: var(--code-pad-y) var(--code-pad-x);
+  border: 0;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+/* Top layer: the coloured copy. Purely visual — the textarea below it gets
+   every click and keystroke. */
+.text-hl {
+  position: relative;
+  z-index: 2;
+  color: var(--text);
+  pointer-events: none;
+}
+
+.text-hl code {
+  font: inherit;
+  white-space: inherit;
+}
+
+/* Bottom layer: the real editor. Same box as the <pre> so caret, selection
+   and native find land exactly on the coloured text. */
+.text-input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+  outline: none;
+}
+
+.text-input::selection {
+  background: rgba(53, 131, 235, 0.26);
+  color: transparent;
+}
+
+/* Wrap on: long lines fold at the window edge (and the line-number gutter
+   steps aside, since one line would then span several rows). */
+.text-wrapper.is-wrap .text-hl,
+.text-wrapper.is-wrap .text-input {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.text-wrapper.is-wrap .text-doc { width: 100%; }
+.text-wrapper.is-wrap .text-gutter { display: none; }
+
+/* Very large files: no coloured copy and no gutter — just the bare textarea,
+   which then scrolls by itself (mirroring millions of characters on every
+   keystroke would make typing crawl). */
+.text-wrapper.is-plain .text-scroll { overflow: hidden; }
+.text-wrapper.is-plain .text-doc { width: 100%; }
+.text-wrapper.is-plain .text-gutter,
+.text-wrapper.is-plain .text-hl { display: none; }
+.text-wrapper.is-plain .text-input {
+  overflow: auto;
+  color: var(--text);
+}
+.text-wrapper.is-plain .text-input::selection {
+  background: rgba(53, 131, 235, 0.26);
+  color: inherit;
+}
+
+/* Syntax colours (highlight.js token classes). Colour only — never weight or
+   slant — so the coloured copy keeps the textarea's exact character widths. */
+.text-hl [class*="hljs-"] { font-style: normal; font-weight: inherit; }
+.text-hl .hljs-comment,
+.text-hl .hljs-quote { color: #8792a0; }
+.text-hl .hljs-keyword,
+.text-hl .hljs-selector-tag,
+.text-hl .hljs-doctag,
+.text-hl .hljs-meta-keyword { color: #a13c9b; }
+.text-hl .hljs-string,
+.text-hl .hljs-regexp,
+.text-hl .hljs-meta-string,
+.text-hl .hljs-addition { color: #1a7f4b; }
+.text-hl .hljs-number,
+.text-hl .hljs-literal,
+.text-hl .hljs-symbol,
+.text-hl .hljs-bullet { color: #c2581a; }
+.text-hl .hljs-title,
+.text-hl .hljs-section { color: #1f6fd0; }
+.text-hl .hljs-built_in,
+.text-hl .hljs-type,
+.text-hl .hljs-title.class_ { color: #a06b00; }
+.text-hl .hljs-attr,
+.text-hl .hljs-attribute,
+.text-hl .hljs-property,
+.text-hl .hljs-variable,
+.text-hl .hljs-template-variable,
+.text-hl .hljs-selector-attr,
+.text-hl .hljs-selector-class,
+.text-hl .hljs-selector-id,
+.text-hl .hljs-selector-pseudo { color: #0b7f8f; }
+.text-hl .hljs-variable.language_ { color: #a13c9b; } /* this, self, … */
+.text-hl .hljs-char.escape_ { color: #c2581a; }
+.text-hl .hljs-tag { color: #8792a0; }
+.text-hl .hljs-name { color: #c0392b; }
+.text-hl .hljs-meta { color: #8a7a1a; }
+.text-hl .hljs-code { color: #b45309; }
+.text-hl .hljs-link { color: #1f6fd0; }
+.text-hl .hljs-deletion { color: #b3261e; background: rgba(179, 38, 30, 0.10); }
+.text-hl .hljs-addition { background: rgba(26, 127, 75, 0.10); }
+
+/* ----- Status bar (sits where the sheet tabs do) ----- */
+.text-status {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ts-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ts-item {
+  padding: 0 8px;
+  font-size: 12px;
+  color: #4e5b67;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.ts-muted { color: #8a95a1; }
+
+.ts-btn {
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: #4e5b67;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ts-btn:hover { background: #fdfefe; border-color: rgba(135, 148, 161, 0.16); }
+
+.ts-btn[aria-pressed="true"] {
+  background: #fefeff;
+  border-color: rgba(135, 148, 161, 0.14);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ts-btn:focus-visible,
+.ts-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.ts-select {
+  min-height: 26px;
+  max-width: 180px;
+  padding: 2px 6px;
+  font-size: 12px;
+}
+
+
+/* ---------- Flat panels ---------- *
+ * With the depth effects gone, panels are told apart from the page by a
+ * plain 1px border and a white fill instead. Keep it that way: no blur, no
+ * drop shadows, no colour ramps (they made tab switches slow to repaint). */
+:root { --panel-border: #d7dfe8; }
+
+#toolbar,
+.formula-bar,
+.grid-wrapper,
+.sheet-tabs {
+  border: 1px solid var(--panel-border);
+  background: #fff;
+}
+
+.grid-scroll,
+.text-scroll { background: #fff; }
+#grid td { background: #fff; }
+#grid th { background: #f4f7fa; }
+
+.btn:not(.btn-primary):not(.btn-success),
+.select-format { border-color: #dfe6ee; }
+.btn-primary { border-color: #3583eb; }
+.btn-success { border-color: #1d8466; }
+
+.float-nav-btn,
+.modal-box,
+.sheet-manager,
+.selection-stats-menu {
+  border: 1px solid var(--panel-border);
+  background: #fff;
+}
+
+.toast { border: 1px solid #000; }
+
+/* A tab row being dragged: no lift, so outline it instead. */
+.sheet-row.dragging { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.sheet-tab.active,
+.ts-btn[aria-pressed="true"] { border-color: var(--panel-border); background: #fff; }
+
+/* Formula-reference boxes: the coloured border drawn around a range while a
+   formula is being typed (one absolutely-positioned box per range, placed by
+   applyRefHighlights in editor.js). */
+.grid-scroll { position: relative; }
+.ref-box {
+  position: absolute;
+  z-index: 1;           /* above the cells, below the sticky headers */
+  box-sizing: border-box;
+  border: 2px solid;    /* colour set inline, one per range */
+  pointer-events: none;
+}
+
+
+/* ---------- Loading bar (shown while a file opens) ---------- *
+ * A centred card over a light scrim. The scrim also swallows clicks so the
+ * toolbar can't be used half-way through an open. Flat like everything else.
+ * The fill grows by stage (scaleX), and the runner slides across on the
+ * compositor, so the bar keeps visibly moving even while the main thread is
+ * busy parsing. */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(243, 246, 250, 0.78);
+}
+
+.loading-card {
+  width: min(380px, calc(100vw - 32px));
+  padding: 18px 22px 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.loading-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a95a1;
+}
+
+.loading-name {
+  margin: 3px 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loading-track {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: #e4eaf0;
+  overflow: hidden;
+}
+
+.loading-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 0.35s ease-out;
+  will-change: transform;
+}
+
+.loading-runner {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 28%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  animation: loading-run 1.15s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes loading-run {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(360%); }
+}
+
+.loading-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 9px;
+  font-size: 12px;
+  color: #5d6a77;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-runner { animation: none; display: none; }
+  .loading-fill { transition: none; }
+}
+
+
+/* The XLSX | CSV save-format switch only means something once a spreadsheet is
+   open, so the home screen doesn't show it. */
+body:has(#gridWrapper.home-empty) #exportFormat { display: none; }
+
+/* The jump-to-top / jump-to-bottom buttons scroll the grid, so they do nothing
+   on the home screen — and would sit on top of the dashed frame. */
+body:has(#gridWrapper.home-empty) #floatNav { display: none; }
+
+
+/* ===================== Design mode (template editor) ===================== *
+ * Flat like the rest of the app: 1px borders and white panels — no blur, no
+ * shadows, no gradients. body.mode-design swaps the grid / text editor for the
+ * layers panel + canvas (see design.js). */
+.design-only { display: none; }
+
+body.mode-design #designBar { display: flex; }
+body.mode-design #designWrapper { display: flex; }
+body.mode-design #targetSize { display: block; }
+body.mode-design #designFormat { display: inline-flex; }
+body.mode-design #designScale { display: inline-flex; }
+
+body.mode-design .sheet-only,
+body.mode-design .sheet-tools-group,
+body.mode-design #formulaBar,
+body.mode-design #gridWrapper,
+body.mode-design #floatNav,
+body.mode-design #sheetTabs,
+body.mode-design #textWrapper,
+body.mode-design #textStatus { display: none !important; }
+
+/* ----- tool bar ----- */
+.design-bar {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 7px 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 13px;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.db-group { display: flex; align-items: center; gap: 6px; }
+.design-bar .divider { margin: 0 2px; }
+
+.btn-icon { padding: 6px 8px; }
+.design-bar .btn.active { background: var(--accent-bg); color: var(--accent); border-color: #b9d0f5; }
+.design-bar .btn[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent); border-color: #b9d0f5; }
+.design-bar .d-caret { width: 12px; height: 12px; flex-basis: 12px; }
+.db-b { font-weight: 800; font-size: 13px; min-width: 30px; justify-content: center; }
+.db-i { font-style: italic; font-family: Georgia, "Times New Roman", serif; font-size: 14px; min-width: 30px; justify-content: center; }
+
+.db-num,
+.target-size {
+  height: 30px;
+  border: 1px solid #dfe6ee;
+  border-radius: 6px;
+  padding: 0 7px;
+  font: inherit;
+  font-size: 12.5px;
+  background: #fff;
+  color: var(--text);
+}
+.db-num { width: 58px; }
+.db-num-wide { width: 68px; }
+.db-num:disabled { opacity: 0.4; }
+.db-num:focus,
+.target-size:focus { outline: 2px solid rgba(53, 131, 235, 0.35); outline-offset: 0; border-color: var(--accent); }
+.target-size { width: 118px; }
+.target-size::placeholder { color: #9aa3ad; }
+
+.db-field { display: flex; align-items: center; gap: 5px; color: #5f6368; font-size: 12px; font-weight: 600; }
+
+.design-bar input[type="color"] {
+  width: 30px; height: 30px; padding: 2px;
+  border: 1px solid #dfe6ee; border-radius: 6px; background: #fff; cursor: pointer;
+}
+.design-bar input[type="color"]:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.d-font-btn { min-width: 158px; max-width: 200px; justify-content: space-between; }
+.d-font-btn .d-font-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ----- dropdown menus (shapes, fonts) ----- */
+.d-menu-host { position: relative; }
+.d-menu {
+  position: absolute;
+  z-index: 60;
+  min-width: 170px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+.d-font-menu { min-width: 230px; }
+.d-menu-title { padding: 6px 8px 3px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8a94a0; }
+.d-menu-item {
+  display: block; width: 100%; text-align: left;
+  padding: 6px 9px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--text);
+  font: inherit; font-size: 14px; cursor: pointer;
+}
+.d-menu-item:hover { background: #f1f4f8; }
+.d-menu-item.is-current { background: var(--accent-bg); color: var(--accent); }
+.d-menu-add { margin-top: 4px; border-top: 1px solid #edf0f4; border-radius: 0 0 6px 6px; font-size: 13px; font-weight: 600; color: #2b4670; }
+.d-menu-add small { display: block; margin-top: 2px; color: #8a94a0; font-size: 11px; font-weight: 400; }
+
+/* ----- workspace ----- */
+.design-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 12px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 15px;
+  overflow: hidden;
+  background: #fff;
+  position: relative;
+}
+
+.design-side {
+  flex: 0 0 264px;
+  width: 264px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--panel-border);
+  background: #fff;
+}
+.design-side-title { padding: 12px 14px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #8a94a0; }
+.d-layers { flex: 0 1 auto; margin: 0; padding: 0 10px 8px; list-style: none; overflow: auto; min-height: 0; }
+.d-layers-empty { margin: 4px 14px 14px; color: #8a94a0; font-size: 12px; line-height: 1.5; }
+
+.d-layer {
+  position: relative;
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 6px; padding: 6px 6px 6px 4px;
+  border: 1px solid #dfe5ec; border-radius: 8px;
+  background: #fff; cursor: pointer; user-select: none;
+}
+.d-layer:hover { background: #f7f9fb; }
+.d-layer.selected { border-color: var(--accent); background: #eef4ff; }
+.d-grip { display: flex; align-items: center; cursor: grab; color: #a5adb7; }
+.d-grip .ui-icon { width: 14px; height: 14px; stroke-width: 2.2; }
+.d-grip-off { width: 14px; cursor: default; }
+.d-type { flex: 0 0 42px; color: #8a94a0; font-size: 11.5px; }
+.d-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+.d-name[contenteditable="true"] { outline: 2px solid rgba(53, 131, 235, 0.4); border-radius: 3px; background: #fff; text-overflow: clip; }
+.d-ic {
+  display: flex; align-items: center; justify-content: center;
+  flex: 0 0 24px; width: 24px; height: 24px; padding: 0;
+  border: 0; border-radius: 6px; background: transparent; color: #5f6368; cursor: pointer;
+}
+.d-ic:hover { background: #e6ecf3; }
+.d-ic .ui-icon { width: 15px; height: 15px; }
+.d-del:hover { color: var(--danger); }
+.d-layer.is-hidden .d-name,
+.d-layer.is-hidden .d-type { opacity: 0.45; }
+.d-layer.is-locked .d-lock { color: var(--accent); }
+.d-layer.dragging { opacity: 0.45; }
+.d-layer.drop-before::before,
+.d-layer.drop-after::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 2px; background: var(--accent); border-radius: 2px;
+}
+.d-layer.drop-before::before { top: -5px; }
+.d-layer.drop-after::after { bottom: -5px; }
+.d-layer-canvas { margin-top: 10px; background: #f8fafc; }
+.d-layer-canvas .d-type { flex-basis: 52px; }
+
+body.design-cropping .d-layers { pointer-events: none; opacity: 0.55; }
+
+.design-main { flex: 1 1 auto; min-width: 0; position: relative; display: flex; }
+.design-viewport { flex: 1 1 auto; position: relative; overflow: hidden; background: #eceff3; }
+.design-viewport canvas { display: block; }
+
+.d-text-editor {
+  position: absolute; z-index: 5;
+  margin: 0; padding: 0;
+  border: 1px dashed var(--accent); outline: none;
+  background: transparent; resize: none; overflow: hidden;
+}
+
+.design-zoom {
+  position: absolute; right: 14px; bottom: 14px; z-index: 4;
+  display: flex; align-items: center; gap: 2px; padding: 3px;
+  background: #fff; border: 1px solid var(--panel-border); border-radius: 8px;
+}
+.design-zoom button { min-width: 26px; height: 26px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-size: 15px; color: #3c4043; cursor: pointer; }
+.design-zoom button:hover { background: #eef1f4; }
+.design-zoom #dFit { font-size: 12px; }
+.design-zoom span { min-width: 46px; text-align: center; font-size: 12px; color: #5f6368; }
+
+.design-drop-hint {
+  display: none; position: absolute; inset: 10px; z-index: 6;
+  align-items: center; justify-content: center;
+  border: 2px dashed var(--accent); border-radius: 12px;
+  background: rgba(232, 240, 254, 0.86);
+  color: var(--accent); font-size: 15px; font-weight: 650; pointer-events: none;
+}
+.design-wrapper.drag-over .design-drop-hint { display: flex; }
+
+/* ===================== Round 2 additions ===================== */
+
+/* ----- Design: target size (number + KB | MB) ----- */
+.target-group { display: none; align-items: center; gap: 7px; }
+body.mode-design .target-group { display: flex; }
+.target-label { color: #5f6368; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.target-group .target-size { width: 76px; }
+.target-unit { min-height: 30px; }
+.target-unit button { padding: 5px 10px; }
+.target-note { min-width: 0; color: var(--accent); font-size: 11.5px; font-weight: 650; white-space: nowrap; }
+.target-group.is-off { opacity: 0.45; }
+.target-group.is-off .target-unit button { cursor: not-allowed; }
+
+#designScale.is-off { opacity: 0.45; }
+#designScale.is-off button { cursor: not-allowed; }
+.target-size::-webkit-outer-spin-button,
+.target-size::-webkit-inner-spin-button { margin: 0; }
+#designFormat button.is-disabled { color: #b4bbc4; cursor: not-allowed; text-decoration: line-through; text-decoration-thickness: 1px; }
+#designFormat button.is-disabled:hover { background: transparent; }
+
+/* ----- Clear (text editor + design) ----- */
+.text-only { display: none; }
+body.mode-text .text-only { display: inline-flex; }
+
+/* ----- Text editor: Jump to row ----- */
+.ts-jump { display: inline-flex; align-items: center; gap: 4px; margin: 0; }
+.ts-jump-input {
+  width: 108px; height: 24px; padding: 0 8px;
+  border: 1px solid #dfe6ee; border-radius: 6px; background: #fff;
+  color: var(--text); font: inherit; font-size: 12px;
+}
+.ts-jump-input:focus { outline: 2px solid rgba(53, 131, 235, 0.35); outline-offset: 0; border-color: var(--accent); }
+.ts-jump-input.is-invalid { border-color: var(--danger); animation: ts-shake 0.28s; }
+@keyframes ts-shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+.ts-pos { cursor: pointer; }
+.ts-pos:hover { color: var(--accent); }
+
+.text-jump-flash {
+  position: absolute; left: 0; right: 0; z-index: 2; pointer-events: none;
+  background: rgba(53, 131, 235, 0.22);
+  animation: text-jump-flash 1.6s ease-out forwards;
+}
+@keyframes text-jump-flash { 0%, 35% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ===================== Round 3 additions ===================== */
+
+/* ---------- Toolbar star toggle ---------- */
+.bookmark-star-btn { position: relative; }
+.bookmark-star-btn .ui-icon-star { transition: fill 0.12s ease, stroke 0.12s ease; }
+.bookmark-star-btn:hover .ui-icon-star { stroke: #e0a020; }
+.bookmark-star-btn.is-bookmarked { color: #e0a020; }
+.bookmark-star-btn.is-bookmarked .ui-icon-star { fill: currentColor; stroke: #c98a10; }
+.bookmark-star-btn:disabled { opacity: 0.5; cursor: default; }
+
+
+/* ===================== Home screen ===================== *
+ * The empty state is one white panel (the #gridWrapper, .home-empty) whose
+ * whole surface is the drop target. Inside: a slim top row (drop hint, totals,
+ * bookmark search) and three equal columns — Text & code / Spreadsheets /
+ * Design. Each column = tinted header (what it opens + how to start a blank
+ * one), its bookmarks as a compact table, and its scratchpad pinned at the
+ * bottom. Column colours come from three custom properties set per column. */
+
+/* Nothing to show in the bottom bar on the homepage (it only holds sheet tabs),
+   so it isn't drawn at all; the panel gives the space back to itself. */
+body.mode-home #sheetTabs { display: none !important; }
+body.mode-home .grid-wrapper.home-empty { margin-bottom: 12px; }
+
+.dropzone {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 15px;
+  overflow: auto;
+  background: #fff;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+.dropzone.drag-over {
+  background: #eaf2fd;
+  box-shadow: inset 0 0 0 2px #3583eb;
+}
+.dropzone.drag-over .home-drop-pill { border-color: #3583eb; background: #fff; color: #206bce; }
+
+/* ----- Top row ----- */
+.home-top {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 13px;
+}
+.home-drop-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  margin: 0;
+  padding: 0 18px 0 20px;
+  border: 2px dashed #b4c2d1;
+  border-radius: 18px;
+  background: #fbfcfe;
+  color: #5c6a78;
+  font-size: 12.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.home-drop-pill .ui-icon { width: 16px; height: 16px; flex-basis: 16px; }
+.home-summary { color: #8a95a1; font-size: 12px; white-space: nowrap; }
+
+.home-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 300px;
+  height: 36px;
+  margin: 0 0 0 auto;
+  padding: 0 7px 0 13px;
+  border: 1px solid #dfe5ec;
+  border-radius: 12px;
+  background: #fbfcfe;
+  color: #8a95a1;
+  cursor: text;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.home-search:focus-within { border-color: #3583eb; box-shadow: 0 0 0 3px rgba(53, 131, 235, 0.16); }
+.home-search-icon { width: 16px; height: 16px; flex-basis: 16px; }
+.home-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+.home-search-input::placeholder { color: #8a95a1; opacity: 1; }
+.home-search-input::-webkit-search-cancel-button { cursor: pointer; }
+.home-search-key {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 21px;
+  padding: 0 6px;
+  border: 1px solid #dfe5ec;
+  border-radius: 6px;
+  background: #fff;
+  color: #8a95a6;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+}
+.home-search:focus-within .home-search-key { display: none; }
+
+/* ----- Columns ----- */
+.home-cols {
+  flex: 1 1 0;
+  min-height: 470px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+}
+.home-col {
+  --col-accent: #a06be0;
+  --col-tint: #f0e6fc;
+  --col-ink: #47238a;
+  --col-ink-soft: #7247b8;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid #dfe5ec;
+  border-radius: 16px;
+  background: #fff;
+}
+.home-col-sheets { --col-accent: #8cc63f; --col-tint: #eaf5d6; --col-ink: #3a5a0c; --col-ink-soft: #5f8a24; }
+.home-col-design { --col-accent: #f06fae; --col-tint: #fde4f0; --col-ink: #85174f; --col-ink-soft: #b04478; }
+
+.home-col-head {
+  position: relative;
+  z-index: 3; /* keeps the Google Sheet popover above the bookmarks below */
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 16px 13px;
+  border-bottom: 2px solid var(--col-accent);
+  border-radius: 15px 15px 0 0;
+  background: var(--col-tint);
+}
+.home-col-id { display: flex; align-items: center; gap: 12px; }
+.home-col-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: 0 3px; /* side room for the ring (drawn with box-shadow, so it adds no height) */
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--col-accent) 20%, #fff), color-mix(in srgb, var(--col-accent) 38%, #fff));
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9);
+  color: var(--col-ink);
+}
+.home-col-icon .ui-icon { width: 18px; height: 18px; flex-basis: 18px; }
+.home-col-titles { min-width: 0; }
+.home-col-title { margin: 0; color: var(--col-ink); font-size: 16px; font-weight: 700; line-height: 1.25; }
+.home-col-sub { margin: 1px 0 0; color: #5f6d7c; font-size: 12px; line-height: 1.3; }
+.home-col-formats { margin: 9px 0 12px; color: var(--col-ink-soft); font-size: 12px; font-weight: 650; line-height: 1.25; }
+
+.home-col-actions { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+.home-btn {
+  width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 35px;
+  padding: 0 12px;
+  border: 1px solid var(--col-accent);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--col-ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.home-btn:hover { background: color-mix(in srgb, var(--col-tint) 55%, #fff); }
+.home-btn:active { background: var(--col-tint); }
+.home-btn .ui-icon { width: 16px; height: 16px; flex-basis: 16px; }
+.google-import-logo { width: 16px; height: 16px; flex: 0 0 16px; display: block; }
+.home-btn-google { border-color: #d3eddc; background: #e6f6ec; color: #25733f; }
+.home-btn-google:hover { background: #dcf1e4; }
+.home-btn-google.active { background: #d3eddc; }
+.home-btn:focus-visible,
+.home-bm-add:focus-visible,
+.home-bm-row:focus-visible,
+.home-scratch:focus-visible,
+.home-scratch-clear:focus-visible,
+.home-bm-del:focus-visible { outline: 2px solid rgba(53, 131, 235, 0.6); outline-offset: 2px; }
+.home-bm-row:focus-visible,
+.home-scratch:focus-visible { outline-offset: -2px; }
+
+/* Google Sheet link popover (floats, so opening it never moves anything). */
+.home-gsheet { position: relative; min-width: 0; display: flex; }
+.google-import-form {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(300px, calc(100vw - 48px));
+  padding: 14px;
+  border: 1px solid #d3eddc;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+  text-align: left;
+}
+.google-import-input {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+.google-import-input:focus-visible { outline: 3px solid rgba(30, 168, 90, 0.2); outline-offset: 0; border-color: #1a7a42; }
+.google-import-input:disabled { opacity: 0.6; }
+.google-import-hint { margin: 0; color: #6b7280; font-size: 11px; line-height: 1.45; }
+.google-import-hint strong { color: #1a7a42; }
+.google-import-error { margin: 0; color: #d93025; font-size: 11.5px; line-height: 1.4; }
+.google-import-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.google-import-actions .btn span { display: inline; }
+
+/* ----- Bookmarks table ----- */
+.home-bm {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px 0;
+}
+.home-bm-head { display: flex; align-items: center; justify-content: space-between; padding: 0 0 7px; }
+.home-bm-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #8a95a1;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.home-bm-star { width: 13px; height: 13px; flex-basis: 13px; color: #e0a020; }
+.home-bm-count { color: #a2a6b3; font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.home-bm-th,
+.home-bm-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 60px 120px;
+  column-gap: 8px;
+  align-items: center;
+  padding: 0 8px;
+}
+.home-bm-th {
+  flex: 0 0 auto;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eef1f5;
+  color: #a2a6b3;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.home-bm-th span:last-child { text-align: right; }
+
+/* The list scrolls on its own if someone has a lot of bookmarks; it reaches
+   into the column's side padding so the per-row remove button can sit there. */
+.home-bm-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 -14px;
+  padding: 0 14px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.home-bm-list { margin: 0; padding: 0; list-style: none; }
+.home-bm-row {
+  position: relative;
+  height: 28px;
+  border-bottom: 1px solid #f3f5f8;
+  cursor: pointer;
+}
+.home-bm-row:hover { background: #f7f9fc; }
+.home-bm-num { color: #a2a6b3; font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
+.home-bm-name { min-width: 0; overflow: hidden; color: #1f2a37; font-size: 12.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.home-bm-type { min-width: 0; overflow: hidden; font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em; text-overflow: ellipsis; white-space: nowrap; } /* colour set inline per file type */
+.home-bm-date { color: #a2a6b3; font-size: 10.5px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.home-bm-del {
+  position: absolute;
+  top: 50%;
+  right: -13px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #a2a6b3;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-50%);
+}
+.home-bm-del .ui-icon { width: 12px; height: 12px; flex-basis: 12px; }
+.home-bm-row:hover .home-bm-del,
+.home-bm-row:focus-within .home-bm-del,
+.home-bm-del:focus-visible { opacity: 1; }
+.home-bm-del:hover { border-color: #f4c6c1; background: #fdeceb; color: var(--danger); }
+
+.home-bm-empty { margin: 0; padding: 14px 8px 4px; color: #a2a6b3; font-size: 12.5px; }
+.home-col.has-rows .home-bm-empty { display: none; }
+.home-col:not(.has-rows) .home-bm-th { display: none; }
+
+.home-bm-add {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  height: 34px;
+  padding: 0 8px;
+  border: 0;
+  background: #fff;
+  color: var(--col-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.home-bm-add .ui-icon { width: 11px; height: 11px; flex-basis: 11px; stroke-width: 2.4; }
+.home-bm-add:hover span { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ----- Scratchpad (pinned to the bottom of its column) ----- */
+.home-scratch {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 53px;
+  padding: 0 14px;
+  border-top: 1px solid #edf0f4;
+  border-radius: 0 0 15px 15px;
+  background: #fbfcfe;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.home-scratch:hover { background: color-mix(in srgb, var(--col-tint) 45%, #fff); }
+.home-scratch-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: 2px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--col-accent) 20%, #fff), color-mix(in srgb, var(--col-accent) 38%, #fff));
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px color-mix(in srgb, var(--col-accent) 22%, #fff);
+  color: var(--col-ink);
+}
+.home-scratch-icon .ui-icon { width: 16px; height: 16px; flex-basis: 16px; }
+.home-scratch-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.home-scratch-title { color: var(--col-ink); font-size: 12.5px; font-weight: 700; line-height: 1.3; }
+.home-scratch-sub { display: flex; min-width: 0; color: #a2a6b3; font-size: 11px; font-style: italic; line-height: 1.3; white-space: pre; }
+.home-scratch-sub > span[data-role="snippet"] { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.home-scratch-sub > span:not([data-role="snippet"]) { flex: 0 0 auto; }
+.home-scratch-clear {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #a2a6b3;
+  cursor: pointer;
+  opacity: 0;
+}
+.home-scratch-clear .ui-icon { width: 13px; height: 13px; flex-basis: 13px; }
+.home-scratch:hover .home-scratch-clear,
+.home-scratch:focus-within .home-scratch-clear,
+.home-scratch-clear:focus-visible { opacity: 1; }
+.home-scratch-clear:hover { border-color: #f4c6c1; background: #fdeceb; color: var(--danger); }
+
+/* ----- Narrow windows: stack the columns, the panel scrolls ----- */
+@media (max-width: 960px) {
+  .home-top { flex-wrap: wrap; }
+  .home-search { order: 3; flex: 1 1 100%; width: auto; margin-left: 0; }
+  .home-cols { flex: 0 0 auto; min-height: 0; grid-template-columns: minmax(0, 1fr); }
+  .home-col { min-height: 440px; }
+}

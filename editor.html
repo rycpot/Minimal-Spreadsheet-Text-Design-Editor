@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Basic Editor</title>
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png" />
+<link rel="icon" type="image/png" sizes="48x48" href="icons/icon48.png" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body class="mode-home">
+
+  <header id="toolbar">
+    <div class="toolbar-group">
+      <button id="newBtn" class="btn" disabled title="Start over with a new file"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3V20.5H6z"/><path d="M14 3.5v4h4M9 13h6M12 10v6"/></svg><span>New</span></button>
+      <span class="divider"></span>
+      <button id="openBtn" class="btn btn-primary">
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5h6l2 2h9v9.5a2 2 0 0 1-2 2h-15z"/><path d="M3.5 6.5v-1a2 2 0 0 1 2-2h4l2 2h4"/></svg><span>Open File</span>
+      </button>
+      <input type="file" id="fileInput" hidden />
+      <span id="fileName" class="file-name">No file loaded</span>
+      <button id="renameTitleBtn" class="icon-btn" title="Rename title" hidden><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4.2-1 9.9-9.9a2 2 0 0 0-2.8-2.8L5.4 16.2z"/><path d="M13.8 7.2l3 3"/></svg></button>
+      <button id="bookmarkStarBtn" class="icon-btn bookmark-star-btn" type="button" title="Bookmark this file" aria-pressed="false" hidden><svg class="ui-icon ui-icon-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></button>
+    </div>
+
+    <div class="toolbar-group sheet-tools-group">
+      <button id="undoBtn" class="btn" disabled title="Undo (Ctrl+Z)"><svg class="ui-icon ui-icon-undo" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h7.5a6.5 6.5 0 0 1 0 13H9"/></svg><span>Undo</span></button>
+      <button id="redoBtn" class="btn" disabled title="Redo (Ctrl+Shift+Z)"><svg class="ui-icon ui-icon-redo" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9h-7.5a6.5 6.5 0 0 0 0 13H15"/></svg><span>Redo</span></button>
+      <button id="clearTextBtn" class="btn text-only" type="button" title="Remove all the text (Ctrl+Z brings it back)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4.5h6V7M7 7l1 13h8l1-13M10 10.5v6M14 10.5v6"/></svg><span>Clear</span></button>
+      <span class="divider sheet-only"></span>
+      <button id="deleteBtn" class="btn sheet-only" disabled title="Delete: removes the selected rows/columns (click row numbers or column letters to select them). With plain cells selected it clears their contents."><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4.5h6V7M7 7l1 13h8l1-13M10 10.5v6M14 10.5v6"/></svg><span>Delete</span></button>
+      <span class="divider sheet-only"></span>
+      <button id="addRowBtn" class="btn sheet-only" disabled title="Add a row after the selected row"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h8M5 17h14M16.5 10v5M14 12.5h5"/></svg><span>Row</span></button>
+      <button id="addColBtn" class="btn sheet-only" disabled title="Add a column after the selected column"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14M12 5v8M17 5v14M14.5 16h5M17 13.5v5"/></svg><span>Column</span></button>
+      <span class="divider sheet-only"></span>
+      <button id="clipBtn" class="btn sheet-only" disabled title="Clip multi-line cells to a single row height, ending with …"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5h18M3 17.5h18"/><path d="M5.5 12h6.5"/><path d="M15.5 12h.01M18 12h.01M20.5 12h.01"/></svg><span>Clip</span></button>
+      <div class="clear-sheet-wrap sheet-only">
+        <button id="clearSheetBtn" class="btn" disabled type="button" title="Clear the active sheet or the whole workbook (Ctrl+Z brings it back)" aria-expanded="false"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4.5h6V7M7 7l1 13h8l1-13M10 10.5v6M14 10.5v6"/></svg><span>Clear</span></button>
+        <div id="clearSheetForm" class="clear-sheet-form" hidden>
+          <p class="clear-sheet-hint">What do you want to clear?</p>
+          <div class="clear-sheet-choices">
+            <button type="button" id="clearSheetTabBtn" class="btn"><span>This sheet only</span></button>
+            <button type="button" id="clearSheetAllBtn" class="btn"><span>Whole workbook</span></button>
+          </div>
+          <button type="button" id="clearSheetCancelBtn" class="btn clear-sheet-cancel-btn"><span>Cancel</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar-group">
+      <div id="targetGroup" class="target-group design-only" title="Optional. Leave empty for maximum quality (JPG 100%, PNG lossless). Type a size and pick KB or MB: the image is saved as a JPG with its quality lowered just enough to fit.">
+        <label class="target-label" for="targetSize">Target size</label>
+        <input id="targetSize" type="number" min="0" step="any" inputmode="decimal" class="target-size" placeholder="none" autocomplete="off" aria-label="Target file size (number)" />
+        <div id="targetUnit" class="format-toggle target-unit" role="radiogroup" aria-label="Target size unit" data-value="kb">
+          <button type="button" class="active" role="radio" aria-checked="true" data-value="kb" tabindex="0" title="Kilobytes">KB</button>
+          <button type="button" role="radio" aria-checked="false" data-value="mb" tabindex="-1" title="Megabytes">MB</button>
+        </div>
+        <span id="targetNote" class="target-note" aria-live="polite"></span>
+      </div>
+      <div id="designFormat" class="format-toggle design-only" role="radiogroup" aria-label="What to save" title="What Save / Export produces" data-value="png">
+        <button type="button" class="active" role="radio" aria-checked="true" data-value="png" tabindex="0" title="Lossless image">PNG</button>
+        <button type="button" role="radio" aria-checked="false" data-value="jpg" tabindex="-1" title="Compressed image (100% quality by default)">JPG</button>
+        <button type="button" role="radio" aria-checked="false" data-value="template" tabindex="-1" title="The editable design (layers, pictures and fonts) as a .design.json file you can reopen later">Template</button>
+      </div>
+      <div id="designScale" class="format-toggle design-only" role="radiogroup" aria-label="Export resolution" title="Resolution multiplier for PNG/JPG export — 2x and 3x render sharper, larger images (not used for Template)" data-value="1">
+        <button type="button" class="active" role="radio" aria-checked="true" data-value="1" tabindex="0" title="Export at the design's own size">1x</button>
+        <button type="button" role="radio" aria-checked="false" data-value="2" tabindex="-1" title="Export at double size">2x</button>
+        <button type="button" role="radio" aria-checked="false" data-value="3" tabindex="-1" title="Export at triple size">3x</button>
+      </div>
+      <div id="exportFormat" class="format-toggle sheet-only" role="radiogroup" aria-label="File format to save as" title="File format to save as" data-value="xlsx">
+        <button type="button" class="active" role="radio" aria-checked="true" data-value="xlsx" tabindex="0">XLSX</button>
+        <button type="button" role="radio" aria-checked="false" data-value="csv" tabindex="-1">CSV</button>
+      </div>
+      <button id="saveBtn" class="btn btn-success" disabled><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 18.5h11a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.55 8.5 4.5 4.5 0 0 0 6.5 18.5z"/><path d="M12 10.5v7M9.5 15l2.5 2.5 2.5-2.5"/></svg><span>Save / Export</span></button>
+    </div>
+  </header>
+
+  <!-- Design mode: tool bar (see design.js). Only visible under body.mode-design. -->
+  <div id="designBar" class="design-bar design-only" role="toolbar" aria-label="Design tools">
+    <div class="db-group">
+      <button id="dAddImage" class="btn" type="button" title="Add an image or SVG (you can also drag files onto the canvas)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 16l4.5-4.5 3.5 3.5 3-3 5 5"/><circle cx="9" cy="9.5" r="1.4"/></svg><span>Image</span></button>
+      <button id="dAddText" class="btn" type="button" title="Add a text layer (double-click text on the canvas to edit it)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.5V5h14v1.5M12 5v14M9 19h6"/></svg><span>Text</span></button>
+      <div class="d-menu-host">
+        <button id="dShapesBtn" class="btn" type="button" aria-haspopup="true" aria-expanded="false" title="Add a shape"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="11" width="9" height="9" rx="1"/><circle cx="16" cy="8" r="4.5"/></svg><span>Shapes</span><svg class="ui-icon d-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
+        <div id="dShapesMenu" class="d-menu" hidden></div>
+      </div>
+    </div>
+    <span class="divider"></span>
+    <div class="db-group">
+      <button id="dUndo" class="btn btn-icon" type="button" disabled title="Undo (Ctrl+Z)" aria-label="Undo"><svg class="ui-icon ui-icon-undo" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h7.5a6.5 6.5 0 0 1 0 13H9"/></svg></button>
+      <button id="dRedo" class="btn btn-icon" type="button" disabled title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg class="ui-icon ui-icon-redo" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9h-7.5a6.5 6.5 0 0 0 0 13H15"/></svg></button>
+      <button id="dClear" class="btn" type="button" disabled title="Remove every layer (Ctrl+Z brings them back)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4.5h6V7M7 7l1 13h8l1-13M10 10.5v6M14 10.5v6"/></svg><span>Clear</span></button>
+    </div>
+    <span class="divider"></span>
+    <div class="db-group">
+      <button id="dCrop" class="btn" type="button" disabled title="Crop the selected image (Enter to apply, Esc to cancel)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v14h14M3 7h14v14"/></svg><span>Crop</span></button>
+      <button id="dCropCancel" class="btn" type="button" hidden title="Cancel cropping"><span>Cancel</span></button>
+      <button id="dCenterH" class="btn btn-icon" type="button" disabled title="Center horizontally on the canvas" aria-label="Center horizontally"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><rect x="5.5" y="6" width="13" height="5" rx="1"/><rect x="8" y="13.5" width="8" height="4.5" rx="1"/></svg></button>
+      <button id="dCenterV" class="btn btn-icon" type="button" disabled title="Center vertically on the canvas" aria-label="Center vertically"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18"/><rect x="6" y="5.5" width="5" height="13" rx="1"/><rect x="13.5" y="8" width="4.5" height="8" rx="1"/></svg></button>
+    </div>
+    <span class="divider"></span>
+    <div class="db-group">
+      <label class="db-field" title="Canvas width in pixels (you can also select the Canvas layer and drag its handles)">W <input id="dW" class="db-num db-num-wide" type="number" min="16" max="8192" step="1" /></label>
+      <label class="db-field" title="Canvas height in pixels">H <input id="dH" class="db-num db-num-wide" type="number" min="16" max="8192" step="1" /></label>
+      <button id="dApply" class="btn" type="button" title="Resize the canvas to this width and height">Apply</button>
+      <label class="db-field db-color" title="Canvas background color">Canvas <input id="dCanvasColor" type="color" value="#ffffff" /></label>
+    </div>
+    <span class="divider"></span>
+    <div class="db-group">
+      <div class="d-menu-host">
+        <button id="dFontBtn" class="btn d-font-btn" type="button" disabled aria-haspopup="true" aria-expanded="false" data-family="Arial" title="Font of the selected text"><span class="d-font-name">Arial</span><svg class="ui-icon d-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
+        <div id="dFontMenu" class="d-menu d-font-menu" hidden></div>
+      </div>
+      <input id="dFontSize" class="db-num" type="number" min="4" max="999" step="1" disabled title="Font size" aria-label="Font size" />
+      <button id="dBold" class="btn btn-icon db-b" type="button" disabled aria-pressed="false" title="Bold" aria-label="Bold">B</button>
+      <button id="dItalic" class="btn btn-icon db-i" type="button" disabled aria-pressed="false" title="Italic" aria-label="Italic">I</button>
+      <input id="dColor" class="db-swatch" type="color" value="#202124" disabled title="Color of the selected text or shape" aria-label="Color" />
+    </div>
+  </div>
+
+  <div id="formulaBar" class="formula-bar">
+    <div id="formulaBarRef" class="formula-bar-ref">A1</div>
+    <div class="formula-bar-fx" aria-hidden="true">ƒx</div>
+    <div id="formulaBarField" class="formula-bar-field">
+      <input type="text" id="formulaBarInput" class="formula-bar-input" placeholder="" autocomplete="off" spellcheck="false" disabled />
+      <!-- Function syntax hint: shown inside the formula bar (never over the grid) while a formula is being typed. -->
+      <div id="formulaHint" class="formula-hint" hidden>
+        <div id="formulaHintSyntax" class="fh-syntax"></div>
+        <div id="formulaHintDesc" class="fh-desc" hidden></div>
+      </div>
+    </div>
+    <div id="selectionStats" class="selection-stats" hidden>
+      <button id="selectionStatsBtn" class="selection-stats-btn" type="button" aria-haspopup="menu" aria-expanded="false" title="Summary of the selected cells (click for more)">
+        <span id="selectionStatsLabel" class="selection-stats-label">Sum</span>
+        <span id="selectionStatsValue" class="selection-stats-value"></span>
+        <svg class="ui-icon selection-stats-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="gridWrapper" class="grid-wrapper home-empty">
+    <div id="dropzone" class="dropzone" role="region" aria-label="Drop a spreadsheet, text or design file anywhere in this area to open it">
+      <div class="home-top">
+        <p class="home-drop-pill"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11.5"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M4 15v3.5a1.5 1.5 0 0 0 1.5 1.5h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg><span>Drag &amp; drop a file anywhere</span></p>
+        <span id="homeSummary" class="home-summary">0 bookmarks · 3 scratchpads</span>
+        <label class="home-search">
+          <svg class="ui-icon home-search-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>
+          <input id="homeSearch" class="home-search-input" type="search" placeholder="Search all bookmarks…" aria-label="Search all bookmarks" title="Search all bookmarks (press / to focus)" autocomplete="off" spellcheck="false" />
+          <kbd class="home-search-key" aria-hidden="true">/</kbd>
+        </label>
+      </div>
+      <div class="home-cols">
+          <section class="home-col home-col-text" data-type="text" aria-labelledby="homeTitle-text">
+            <header class="home-col-head">
+              <div class="home-col-id">
+                <span class="home-col-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg></span>
+                <div class="home-col-titles">
+                  <h2 class="home-col-title" id="homeTitle-text">Text &amp; code</h2>
+                  <p class="home-col-sub">Notes, JSON, logs, scripts</p>
+                </div>
+              </div>
+              <p class="home-col-formats" title="Anything that reads as plain text opens in the text editor, whatever its extension">TXT · MD · JSON · YAML · HTML · JS · PY · LOG · any text</p>
+              <div class="home-col-actions">
+                <button id="createTextBtn" class="home-btn" type="button" title="Start with an empty text file"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Blank text</span></button>
+              </div>
+            </header>
+            <div class="home-bm">
+              <div class="home-bm-head">
+                <span class="home-bm-label"><svg class="ui-icon home-bm-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Bookmarks</span></span>
+                <span class="home-bm-count" data-role="count">0 / 50</span>
+              </div>
+              <div class="home-bm-th" aria-hidden="true"><span>#</span><span>Name</span><span>Type</span><span>Added</span></div>
+              <div class="home-bm-scroll">
+                <ul class="home-bm-list" data-role="list" aria-label="Text &amp; code bookmarks"></ul>
+                <p class="home-bm-empty" data-role="empty">No bookmarks yet</p>
+                <button type="button" class="home-bm-add" data-role="add"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add bookmark</span></button>
+              </div>
+            </div>
+            <div class="home-scratch" data-scratch="text" role="button" tabindex="0" aria-label="Open your scratch text file">
+              <span class="home-scratch-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg></span>
+              <span class="home-scratch-body">
+                <span class="home-scratch-title">Scratch text</span>
+                <span class="home-scratch-sub"><span data-role="snippet">Empty — click to start</span><span class="home-scratch-sep" aria-hidden="true"> · </span><span data-role="time">Not saved yet</span></span>
+              </span>
+              <button type="button" class="home-scratch-clear" data-role="clear" title="Clear this scratchpad" aria-label="Clear scratch text" hidden><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            </div>
+          </section>
+          <section class="home-col home-col-sheets" data-type="sheet" aria-labelledby="homeTitle-sheet">
+            <header class="home-col-head">
+              <div class="home-col-id">
+                <span class="home-col-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M4 14.5h16M9.5 5v14M15 5v14"/></svg></span>
+                <div class="home-col-titles">
+                  <h2 class="home-col-title" id="homeTitle-sheet">Spreadsheets</h2>
+                  <p class="home-col-sub">Tables and formulas</p>
+                </div>
+              </div>
+              <p class="home-col-formats">XLSX · CSV · TSV · ODS · Numbers</p>
+              <div class="home-col-actions">
+                <button id="createBlankBtn" class="home-btn" type="button" title="Start with an empty sheet (10 columns × 100 rows)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Blank sheet</span></button>
+                <div class="home-gsheet">
+                  <button id="googleImportBtn" class="home-btn home-btn-google" type="button" title="Import a spreadsheet from a Google Sheets link" aria-expanded="false"><img src="icons/google-sheets.svg" class="google-import-logo" alt="" aria-hidden="true" /><span>Google Sheet</span></button>
+                  <form id="googleImportForm" class="google-import-form" hidden>
+                    <input type="url" id="googleImportInput" class="google-import-input" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off" spellcheck="false" inputmode="url" />
+                    <p id="googleImportError" class="google-import-error" hidden></p>
+                    <p class="google-import-hint">The sheet's sharing has to be set to <strong>"Anyone with the link"</strong> (Viewer is enough) — we download it directly from Google, without signing in.</p>
+                    <div class="google-import-actions">
+                      <button type="submit" id="googleImportSubmitBtn" class="btn btn-primary"><span>Import</span></button>
+                      <button type="button" id="googleImportCancelBtn" class="btn"><span>Cancel</span></button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </header>
+            <div class="home-bm">
+              <div class="home-bm-head">
+                <span class="home-bm-label"><svg class="ui-icon home-bm-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Bookmarks</span></span>
+                <span class="home-bm-count" data-role="count">0 / 50</span>
+              </div>
+              <div class="home-bm-th" aria-hidden="true"><span>#</span><span>Name</span><span>Type</span><span>Added</span></div>
+              <div class="home-bm-scroll">
+                <ul class="home-bm-list" data-role="list" aria-label="Spreadsheets bookmarks"></ul>
+                <p class="home-bm-empty" data-role="empty">No bookmarks yet</p>
+                <button type="button" class="home-bm-add" data-role="add"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add bookmark</span></button>
+              </div>
+            </div>
+            <div class="home-scratch" data-scratch="sheet" role="button" tabindex="0" aria-label="Open your scratch sheet">
+              <span class="home-scratch-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M4 14.5h16M9.5 5v14M15 5v14"/></svg></span>
+              <span class="home-scratch-body">
+                <span class="home-scratch-title">Scratch sheet</span>
+                <span class="home-scratch-sub"><span data-role="snippet">Empty — click to start</span><span class="home-scratch-sep" aria-hidden="true"> · </span><span data-role="time">Not saved yet</span></span>
+              </span>
+              <button type="button" class="home-scratch-clear" data-role="clear" title="Clear this scratchpad" aria-label="Clear scratch sheet" hidden><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            </div>
+          </section>
+          <section class="home-col home-col-design" data-type="design" aria-labelledby="homeTitle-design">
+            <header class="home-col-head">
+              <div class="home-col-id">
+                <span class="home-col-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h16v15H4z"/><path d="M4 15l4.5-4.5 3.5 3.5 3-3 5 5"/><circle cx="9" cy="9" r="1.3"/></svg></span>
+                <div class="home-col-titles">
+                  <h2 class="home-col-title" id="homeTitle-design">Design</h2>
+                  <p class="home-col-sub">Images, text and shapes</p>
+                </div>
+              </div>
+              <p class="home-col-formats" title="Drop a PNG, JPG or WebP image to start a design at that image's exact size">PNG · JPG · .design.json · drop an image</p>
+              <div class="home-col-actions">
+                <button id="createDesignBtn" class="home-btn" type="button" title="Start with an empty 1280 × 800 canvas — or drop an image to start from it"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Blank template</span></button>
+              </div>
+            </header>
+            <div class="home-bm">
+              <div class="home-bm-head">
+                <span class="home-bm-label"><svg class="ui-icon home-bm-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Bookmarks</span></span>
+                <span class="home-bm-count" data-role="count">0 / 50</span>
+              </div>
+              <div class="home-bm-th" aria-hidden="true"><span>#</span><span>Name</span><span>Type</span><span>Added</span></div>
+              <div class="home-bm-scroll">
+                <ul class="home-bm-list" data-role="list" aria-label="Design bookmarks"></ul>
+                <p class="home-bm-empty" data-role="empty">No bookmarks yet</p>
+                <button type="button" class="home-bm-add" data-role="add" title="Only saved .design.json templates can be bookmarked"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add bookmark</span></button>
+              </div>
+            </div>
+            <div class="home-scratch" data-scratch="design" role="button" tabindex="0" aria-label="Open your scratch design">
+              <span class="home-scratch-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h16v15H4z"/><path d="M4 15l4.5-4.5 3.5 3.5 3-3 5 5"/><circle cx="9" cy="9" r="1.3"/></svg></span>
+              <span class="home-scratch-body">
+                <span class="home-scratch-title">Scratch design</span>
+                <span class="home-scratch-sub"><span data-role="snippet">Empty — click to start</span><span class="home-scratch-sep" aria-hidden="true"> · </span><span data-role="time">Not saved yet</span></span>
+              </span>
+              <button type="button" class="home-scratch-clear" data-role="clear" title="Clear this scratchpad" aria-label="Clear scratch design" hidden><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            </div>
+          </section>
+      </div>
+    </div>
+    <div id="gridScroll" class="grid-scroll" hidden>
+      <table id="grid"></table>
+    </div>
+  </div>
+
+  <!-- Plain-text / code editor. Shown instead of the grid (see body.mode-text in styles.css)
+       when the opened file isn't a spreadsheet. The <textarea> underneath takes all input;
+       the <pre> on top is a purely visual, syntax-coloured copy of its text. -->
+  <div id="textWrapper" class="grid-wrapper text-wrapper">
+    <div id="textScroll" class="text-scroll">
+      <div class="text-doc">
+        <pre id="textGutter" class="text-gutter" aria-hidden="true"></pre>
+        <div class="text-stack">
+          <textarea id="textInput" class="text-input" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" wrap="off" aria-label="File contents"></textarea>
+          <pre id="textHl" class="text-hl" aria-hidden="true"><code id="textHlCode"></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="designWrapper" class="design-wrapper design-only">
+    <aside class="design-side" aria-label="Layers">
+      <div class="design-side-title">Layers</div>
+      <ul id="designLayers" class="d-layers"></ul>
+      <p id="designLayersEmpty" class="d-layers-empty">Add an image, text or shape — or drag files onto the canvas.</p>
+    </aside>
+    <div class="design-main">
+      <div id="designViewport" class="design-viewport"></div>
+      <div class="design-zoom" aria-label="Zoom">
+        <button id="dZoomOut" type="button" title="Zoom out" aria-label="Zoom out">−</button>
+        <span id="dZoomLabel">100%</span>
+        <button id="dZoomIn" type="button" title="Zoom in" aria-label="Zoom in">+</button>
+        <button id="dFit" type="button" title="Fit the canvas in the window">Fit</button>
+      </div>
+      <div class="design-drop-hint" aria-hidden="true">Drop images, SVGs or fonts</div>
+    </div>
+  </div>
+  <input type="file" id="dImageInput" accept="image/*,.svg" multiple hidden />
+  <input type="file" id="dFontFile" accept=".ttf,.otf,.woff,.woff2" multiple hidden />
+
+  <div id="floatNav" class="float-nav">
+    <button id="scrollTopBtn" class="float-nav-btn" title="Go to top (A1)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6.5 10.5L12 5l5.5 5.5"/></svg></button>
+    <button id="scrollBottomBtn" class="float-nav-btn" title="Go to last row with data"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6.5 13.5L12 19l5.5-5.5"/></svg></button>
+  </div>
+
+  <footer id="sheetTabs" class="sheet-tabs" hidden></footer>
+
+  <footer id="textStatus" class="sheet-tabs text-status" aria-label="Text editor status">
+    <div class="ts-group">
+      <form id="textJumpForm" class="ts-jump" autocomplete="off">
+        <input id="textJump" class="ts-jump-input" type="text" inputmode="numeric" placeholder="Jump to row" aria-label="Jump to row number" title="Type a row (line) number and press Enter — Ctrl+G" />
+        <button type="submit" class="ts-btn" title="Jump to that row">Go</button>
+      </form>
+      <span id="textPos" class="ts-item ts-pos" title="Click to jump to a row (Ctrl+G)">Ln 1, Col 1</span>
+      <span id="textCount" class="ts-item ts-muted"></span>
+    </div>
+    <div class="ts-group">
+      <span id="textEnc" class="ts-item ts-muted">UTF-8</span>
+      <button id="textEolBtn" class="ts-btn" type="button" title="Line endings used when saving (click to switch)">LF</button>
+      <button id="textWrapBtn" class="ts-btn" type="button" aria-pressed="false" title="Wrap long lines">Wrap</button>
+      <select id="textLang" class="select-format ts-select" title="Syntax highlighting language" aria-label="Syntax highlighting language"></select>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- Shown while a file is opening (see beginLoading in editor.js). -->
+  <div id="loadingOverlay" class="loading-overlay" hidden>
+    <div class="loading-card" role="status" aria-live="polite">
+      <div class="loading-title">Opening</div>
+      <div id="loadingName" class="loading-name"></div>
+      <div id="loadingTrack" class="loading-track" role="progressbar" aria-label="Loading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="loadingFill" class="loading-fill"></div>
+        <div class="loading-runner"></div>
+      </div>
+      <div class="loading-meta">
+        <span id="loadingStage">Starting&hellip;</span>
+        <span id="loadingPct">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="passwordModal" class="modal-overlay" hidden>
+    <div class="modal-box">
+      <h3>Password required</h3>
+      <p>This file is password-protected. Enter the password to open it.</p>
+      <input type="password" id="passwordInput" placeholder="Password" autocomplete="off" />
+      <p id="passwordError" class="modal-error" hidden></p>
+      <div class="modal-actions">
+        <button id="passwordCancelBtn" class="btn"><span>Cancel</span></button>
+        <button id="passwordSubmitBtn" class="btn btn-primary"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h8v14H4zM12 12h8M16.5 8.5L20 12l-3.5 3.5"/></svg><span>Open</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- The heavy libraries (SheetJS, HyperFormula, office-crypto) are loaded by
+       editor.js on demand (see ensureLibs) so this page paints without
+       parsing ~1.7 MB of JavaScript first. -->
+  <script src="editor.js"></script>
+</body>
+</html>

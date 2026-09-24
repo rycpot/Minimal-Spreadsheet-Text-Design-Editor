@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Minimal Spreadsheet, Text & Design Editor: Runs Local, Works Fully Offline",
+  "version": "1.0.0",
+  "description": "Edit XLSX/CSV/TSV/ODS/Numbers files, text/code, and design templates with PNG/JPG export - all in one tab.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Open Sheet Editor"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [],
+  "host_permissions": [
+    "https://docs.google.com/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
