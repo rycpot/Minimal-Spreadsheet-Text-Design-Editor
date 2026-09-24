@@ -1,4 +1,8 @@
-# Sheet Editor
+![enter image description here](https://files.catbox.moe/wu3657.png)
+![enter image description here](https://files.catbox.moe/rgeipq.png)
+![enter image description here](https://files.catbox.moe/nah6o8.png)
+![enter image description here](https://files.catbox.moe/evk5jl.png)
+# Minimal Spreadsheet, Text & Design Editor: Runs Local, Works Fully Offline
 
 A simple, offline Chrome extension for editing spreadsheets, text/code files, and quick image designs — right in your browser, with nothing uploaded anywhere.
 
@@ -24,8 +28,9 @@ Everything happens locally in your browser. No files, formulas, or images are ev
 
 ## Install
 
-**From the Chrome Web Store**
-👉 [add link once published]
+![enter image description here](https://fonts.gstatic.com/s/i/productlogos/chrome_store/v7/192px.svg)
+
+INSTALL FROM CHROME WEBSTORE
 
 **From source (for developers)**
 1. Download or clone this repo.
