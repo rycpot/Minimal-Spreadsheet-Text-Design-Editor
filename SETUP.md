@@ -142,7 +142,7 @@ canvas like any image.)
 ## Performance notes
 
 - **Nothing heavy loads at startup.** The spreadsheet libraries (SheetJS
-  and HyperFormula, ~1.9 MB) are only fetched the first time you open a
+  and HyperFormula, ~3.1 MB) are only fetched the first time you open a
   spreadsheet or create a blank one, and stay loaded for the rest of the
   session. The design editor (Konva, `lib/konva.min.js`, plus `design.js`)
   is likewise fetched only the first time you start a design. The home
@@ -156,3 +156,15 @@ canvas like any image.)
   switch back to the tab). Panels are separated by plain borders. The
   coloured boxes shown around cell ranges while you type a formula are
   drawn as one overlay box per range.
+
+## Releasing a new version
+
+1. Bump `"version"` in `manifest.json` (e.g. `1.0.2`) and merge to `main`.
+2. Tag that commit with the same version and push the tag:
+   `git tag v1.0.2 && git push origin v1.0.2`
+3. The **Release** GitHub Action builds `minimal-editor-v1.0.2.zip`
+   (via `scripts/package.sh`) and attaches it to a new GitHub Release.
+   Upload that zip to the Chrome Web Store developer dashboard.
+
+To build the zip locally instead, run `scripts/package.sh`; it writes
+to `dist/`.

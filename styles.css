@@ -2313,7 +2313,6 @@ body.mode-home .grid-wrapper.home-empty { margin-bottom: 12px; }
 .home-btn:hover { background: color-mix(in srgb, var(--col-tint) 55%, #fff); }
 .home-btn:active { background: var(--col-tint); }
 .home-btn .ui-icon { width: 16px; height: 16px; flex-basis: 16px; }
-.google-import-logo { width: 16px; height: 16px; flex: 0 0 16px; display: block; }
 .home-btn-google { border-color: #d3eddc; background: #e6f6ec; color: #25733f; }
 .home-btn-google:hover { background: #dcf1e4; }
 .home-btn-google.active { background: #d3eddc; }

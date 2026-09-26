@@ -127,7 +127,7 @@ const el = {
 /* ------------------------------------------------------------------ *
  * Lazy-loaded libraries
  * ------------------------------------------------------------------ *
- * SheetJS + HyperFormula are ~1.9 MB of JavaScript that must be downloaded,
+ * SheetJS + HyperFormula are ~3.1 MB of JavaScript that must be downloaded,
  * parsed and kept in memory. They are only needed once a *spreadsheet* is
  * opened (or a blank one created), so nothing is loaded at startup: the
  * home screen and the text editor never pay for them. The first spreadsheet
@@ -137,9 +137,9 @@ const el = {
  * only ever created after `await ensureLibs()`.
  * ------------------------------------------------------------------ */
 const LIB_SCRIPTS = [
-  ['lib/xlsx.full.min.js', 0.48],        // [path, share of the total download, for the progress bar]
-  ['lib/hyperformula.full.min.js', 0.48],
-  ['lib/office-crypto.js', 0.04],
+  ['lib/xlsx.full.min.js', 0.31],        // [path, share of the total download, for the progress bar]
+  ['lib/hyperformula.full.js', 0.68],
+  ['lib/office-crypto.js', 0.01],
 ];
 let libsPromise = null;
 let libsLoaded = false;
