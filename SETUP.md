@@ -142,7 +142,7 @@ canvas like any image.)
 ## Performance notes
 
 - **Nothing heavy loads at startup.** The spreadsheet libraries (SheetJS
-  and HyperFormula, ~1.9 MB) are only fetched the first time you open a
+  and HyperFormula, ~3.1 MB) are only fetched the first time you open a
   spreadsheet or create a blank one, and stay loaded for the rest of the
   session. The design editor (Konva, `lib/konva.min.js`, plus `design.js`)
   is likewise fetched only the first time you start a design. The home
