@@ -1,8 +1,11 @@
-# Push a tag like v1.0.1 (matching "version" in manifest.json) to build the
-# store-ready zip and publish it as a GitHub Release.
+# Publishes the store-ready zip as a GitHub Release, named after "version" in
+# manifest.json (e.g. v1.0.1). Start it either way:
+#   - Actions tab -> Release -> Run workflow (on main): creates the tag too.
+#   - Push a tag like v1.0.1 that matches manifest.json.
 name: Release
 
 on:
+  workflow_dispatch:
   push:
     tags: ['v*']
 
@@ -15,21 +18,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check the tag matches manifest.json
+      - name: Work out the release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           version=$(python3 -c 'import json; print(json.load(open("manifest.json"))["version"])')
-          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
-            echo "::error::Tag ${GITHUB_REF_NAME} does not match manifest.json version ${version}"
+          tag="v${version}"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            if [ "${GITHUB_REF_NAME}" != "${tag}" ]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} does not match manifest.json version ${version}"
+              exit 1
+            fi
+          elif [ "${GITHUB_REF_NAME}" != "main" ]; then
+            echo "::error::Run this workflow on main (it was started on ${GITHUB_REF_NAME})"
             exit 1
           fi
+          if gh release view "${tag}" >/dev/null 2>&1; then
+            echo "::error::Release ${tag} already exists. Bump \"version\" in manifest.json first."
+            exit 1
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
       - name: Build zip
         id: build
         run: echo "zip=$(scripts/package.sh)" >> "$GITHUB_OUTPUT"
 
+      # When started from the Actions tab, gh creates the tag at this commit.
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "${{ steps.build.outputs.zip }}" \
-            --title "$GITHUB_REF_NAME" --generate-notes
+          gh release create "${{ steps.tag.outputs.tag }}" "${{ steps.build.outputs.zip }}" \
+            --target "${GITHUB_SHA}" --title "${{ steps.tag.outputs.tag }}" --generate-notes
