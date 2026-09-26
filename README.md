@@ -24,7 +24,9 @@ A simple, offline Chrome extension for editing spreadsheets, text/code files, an
 
 ## Privacy
 
-Everything happens locally in your browser. No files, formulas, or images are ever sent to a server — there's nothing to upload to in the first place. The extension only needs access to `docs.google.com` (to let you import a Google Sheet you have open).
+Everything happens locally in your browser. No files, formulas, or images are ever sent to a server — there's nothing to upload to in the first place. There are no accounts, analytics, or tracking.
+
+The one optional feature that uses the network is **Import from Google Sheet**: when you paste a Google Sheets link, the extension downloads that sheet directly from `docs.google.com` (this is the only site it has permission to access). The request is made without your Google cookies or sign-in, so it only works for sheets shared as "Anyone with the link". Nothing is sent to Google except the request for that sheet. Everything else works fully offline.
 
 ## Install
 
