@@ -2,7 +2,7 @@
 ![enter image description here](https://files.catbox.moe/rgeipq.png)
 ![enter image description here](https://files.catbox.moe/nah6o8.png)
 ![enter image description here](https://files.catbox.moe/evk5jl.png)
-# Minimal Spreadsheet, Text & Design Editor: Runs Local, Works Fully Offline
+# Minimal Spreadsheet, Text & Design Editor: Runs Local, Works Offline
 
 A simple, offline Chrome extension for editing spreadsheets, text/code files, and quick image designs — right in your browser, with nothing uploaded anywhere.
 
@@ -26,7 +26,7 @@ A simple, offline Chrome extension for editing spreadsheets, text/code files, an
 
 Everything happens locally in your browser. No files, formulas, or images are ever sent to a server — there's nothing to upload to in the first place. There are no accounts, analytics, or tracking.
 
-The one optional feature that uses the network is **Import from Google Sheet**: when you paste a Google Sheets link, the extension downloads that sheet directly from `docs.google.com` (this is the only site it has permission to access). The request is made without your Google cookies or sign-in, so it only works for sheets shared as "Anyone with the link". Nothing is sent to Google except the request for that sheet. Everything else works fully offline.
+The one optional feature that uses the network is **Import from Google Sheet**: when you paste a Google Sheets link, the extension downloads that sheet directly from `docs.google.com` (this is the only site it has permission to access). The request is made without your Google cookies or sign-in, so it only works for sheets shared as "Anyone with the link". Nothing is sent to Google except the request for that sheet. Everything else works offline.
 
 ## Install
 

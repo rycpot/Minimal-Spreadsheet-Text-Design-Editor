@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Minimal Spreadsheet, Text & Design Editor: Runs Local, Works Fully Offline",
+  "name": "Minimal Spreadsheet, Text & Design Editor: Runs Local, Works Offline",
   "version": "1.0.0",
   "description": "Edit XLSX/CSV/TSV/ODS/Numbers files, text/code, and design templates with PNG/JPG export - all in one tab.",
   "icons": {
