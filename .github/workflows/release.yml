@@ -1,5 +1,8 @@
 # Publishes the store-ready zip as a GitHub Release, named after "version" in
-# manifest.json (e.g. v1.0.1). Start it either way:
+# manifest.json (e.g. v1.0.1). It runs:
+#   - Automatically when manifest.json changes on main: releases the version
+#     if it has no release yet, otherwise does nothing. So bumping the version
+#     and merging is the whole release process.
 #   - Actions tab -> Release -> Run workflow (on main): creates the tag too.
 #   - Push a tag like v1.0.1 that matches manifest.json.
 name: Release
@@ -7,7 +10,9 @@ name: Release
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     tags: ['v*']
+    paths: ['manifest.json']   # applies to main only; tag pushes always run
 
 permissions:
   contents: write
@@ -35,17 +40,24 @@ jobs:
             exit 1
           fi
           if gh release view "${tag}" >/dev/null 2>&1; then
+            if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${GITHUB_REF_TYPE}" = "branch" ]; then
+              echo "Release ${tag} already exists; nothing to release."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             echo "::error::Release ${tag} already exists. Bump \"version\" in manifest.json first."
             exit 1
           fi
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
 
       - name: Build zip
+        if: steps.tag.outputs.skip != 'true'
         id: build
         run: echo "zip=$(scripts/package.sh)" >> "$GITHUB_OUTPUT"
 
-      # When started from the Actions tab, gh creates the tag at this commit.
+      # Unless a tag push started this run, gh creates the tag at this commit.
       - name: Publish release
+        if: steps.tag.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

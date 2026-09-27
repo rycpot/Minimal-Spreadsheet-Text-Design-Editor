@@ -160,15 +160,15 @@ canvas like any image.)
 ## Releasing a new version
 
 1. Bump `"version"` in `manifest.json` (e.g. `1.0.2`) and merge to `main`.
-2. On GitHub, open **Actions → Release → Run workflow**, keep the branch
-   set to `main`, and click **Run workflow**. (Pushing a matching tag,
-   `git tag v1.0.2 && git push origin v1.0.2`, does the same thing.)
-3. The workflow creates the `v1.0.2` tag and a GitHub Release with
-   `minimal-editor-v1.0.2.zip` (built by `scripts/package.sh`) attached.
-   Upload that zip to the Chrome Web Store developer dashboard.
+2. That's it: the **Release** GitHub Action notices the new version and
+   publishes a GitHub Release `v1.0.2` with `minimal-editor-v1.0.2.zip`
+   (built by `scripts/package.sh`) attached. Upload that zip to the Chrome
+   Web Store developer dashboard.
 
-The workflow refuses to run if a release for that version already exists,
-so bump the version before each release.
+Merges that don't change the version don't release anything. You can also
+start a release by hand from **Actions → Release → Run workflow** (on
+`main`), or by pushing a matching tag (`git tag v1.0.2 && git push origin
+v1.0.2`); both refuse if that version was already released.
 
 To build the zip locally instead, run `scripts/package.sh`; it writes
 to `dist/`.
