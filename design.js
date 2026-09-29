@@ -2146,7 +2146,10 @@
 
   function leave() {
     if (!S.active) return;
-    if (S.editing) { S.editing.ta.remove(); S.editing = null; }
+    // Finish (keep) an in-progress text edit the normal way. Removing its textarea directly
+    // fires the textarea's blur handler, which finishes the edit and removes it first, so the
+    // second removal threw and aborted leaving the design.
+    if (S.editing) finishTextEdit(true);
     if (S.cropping) { S.cropping.group.destroy(); S.cropping = null; document.body.classList.remove('design-cropping'); }
     closeMenu();
     S.active = false;
@@ -2184,6 +2187,7 @@
 
   window.Design = {
     enter, leave, undo, redo, exportImage, clearAll, forgetScratch,
+    finishEditing: () => finishTextEdit(true),
     isActive: () => S.active,
     DEFAULT_W, DEFAULT_H,
     // for tests / debugging

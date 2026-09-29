@@ -739,37 +739,53 @@ function sheetWorkbookIsEmpty(wb) {
   } catch (err) { return false; }
 }
 
-// Builds the record to store for whichever scratchpad is open right now.
-// Reads straight from the live document — nothing here is heavy enough to
-// need debouncing itself (that's scheduleScratchAutosave's job).
-async function buildScratchRecord(id) {
-  const now = new Date().toISOString();
+// Captures whichever scratchpad is open right now: `sig`, a string that changes
+// whenever anything worth saving changes (content, title, a pad's own settings),
+// and `build()`, which makes the record to store. Kept apart so an unchanged pad
+// costs a string compare, not an .xlsx export. Reads straight from the live
+// document — nothing here needs debouncing itself (that's scheduleScratchAutosave's job).
+async function captureScratch(id) {
   const kind = scratchKind(id);
+  const title = state.title || scratchDefaultName(id);
+  const record = (empty, payload) => ({ id, updatedAt: new Date().toISOString(), title, empty, payload });
   if (kind === 'text') {
     if (state.mode !== 'text' || !state.text) return null;
     const text = el.textInput.value;
+    const { lang, langManual, wrap } = state.text;
+    // An auto-detected language is re-detected on open, so only a manual pick counts as a change.
     return {
-      id, updatedAt: now, title: state.title || scratchDefaultName(id), empty: text === '',
-      payload: { text, lang: state.text.lang, langManual: state.text.langManual, wrap: state.text.wrap },
+      sig: JSON.stringify([title, text, langManual ? lang : null, !!wrap]),
+      build: () => record(text === '', { text, lang, langManual, wrap }),
     };
   }
   if (kind === 'sheet') {
     if (state.mode !== 'sheet' || !state.workbook) return null;
-    const xlsx = XLSX.write(state.workbook, { type: 'array', bookType: 'xlsx' });
+    const wb = state.workbook;
     return {
-      id, updatedAt: now, title: state.title || scratchDefaultName(id), empty: sheetWorkbookIsEmpty(state.workbook),
-      payload: { xlsx, activeSheet: state.activeSheet },
+      sig: JSON.stringify([title, state.activeSheet, wb.SheetNames, wb.SheetNames.map((n) => wb.Sheets[n])]),
+      build: () => record(sheetWorkbookIsEmpty(wb), { xlsx: XLSX.write(wb, { type: 'array', bookType: 'xlsx' }), activeSheet: state.activeSheet }),
     };
   }
   if (kind === 'design') {
     if (state.mode !== 'design' || !window.Design) return null;
     const tpl = await window.Design._serializeTemplate();
     return {
-      id, updatedAt: now, title: state.title || scratchDefaultName(id), empty: tpl.layers.length === 0,
-      payload: { template: tpl },
+      sig: JSON.stringify([title, { ...tpl, savedAt: null }]), // savedAt is a fresh timestamp every time, not a change
+      build: () => record(tpl.layers.length === 0, { template: tpl }),
     };
   }
   return null;
+}
+
+// What the open pad looked like when it was last saved (or opened): see captureScratch.
+// A save whose capture matches is skipped, so a pad's "5m ago" only moves when it
+// actually changed, and a blank pad that's only opened and closed is never stored.
+let scratchSavedSig = null;
+async function markScratchSaved(id) {
+  try {
+    const cap = await captureScratch(id);
+    scratchSavedSig = cap ? cap.sig : null;
+  } catch (err) { scratchSavedSig = null; } // no baseline: the next save just goes ahead
 }
 
 let scratchAutosaveTimer = 0;
@@ -789,8 +805,10 @@ async function flushScratchAutosave(explicitId) {
   const id = explicitId || state.scratchId;
   if (!id) return;
   try {
-    const record = await buildScratchRecord(id);
-    if (record) await scratchPut(record);
+    const cap = await captureScratch(id);
+    if (!cap || cap.sig === scratchSavedSig) return; // nothing changed since the last save
+    await scratchPut(cap.build());
+    scratchSavedSig = cap.sig;
   } catch (err) {
     // Logged with .name/.message explicitly: console.error(err) alone prints an
     // inspectable object in DevTools, but copying/pasting it elsewhere (or a tool
@@ -822,6 +840,9 @@ async function leaveScratchpad() {
   if (scratchKind(id) === 'sheet') {
     state.scratchSheetStash.set(id, { undo: state.undoStack, redo: state.redoStack });
   }
+  // Text being typed into a design's text box only reaches the layer when the edit
+  // finishes; finish it now so this last save includes it.
+  if (scratchKind(id) === 'design' && state.mode === 'design' && window.Design) window.Design.finishEditing();
   state.scratchId = null;
   paintScratchSlots();
   await flushScratchAutosave(id);
@@ -917,6 +938,7 @@ async function openScratchpad(id, opts) {
     }
     state.scratchId = id;
     state.dirty = false;
+    await markScratchSaved(id); // what's on screen now is what's stored — nothing to save until it changes
   } catch (err) {
     console.error(err);
     showToast(`Couldn’t open your ${label.toLowerCase()}.`, 4000);
