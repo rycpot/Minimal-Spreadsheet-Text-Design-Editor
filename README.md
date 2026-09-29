@@ -32,7 +32,7 @@ The one optional feature that uses the network is **Import from Google Sheet**: 
 
 ![enter image description here](https://fonts.gstatic.com/s/i/productlogos/chrome_store/v7/192px.svg)
 
-INSTALL FROM CHROME WEBSTORE
+[INSTALL FROM CHROME WEBSTORE](https://chromewebstore.google.com/detail/ipibofmjfgkdjfanoainopimacngokjd)
 
 **From source (for developers)**
 1. Download or clone this repo.
@@ -44,6 +44,7 @@ INSTALL FROM CHROME WEBSTORE
 ## Basic usage
 
 - **Open File**, or drag a file onto the home screen, to start editing. You can also **Create blank text**, **Create blank spreadsheet**, or **Import from Google Sheet**.
+- **Scratch pads:** each column has six auto-saving scratch pads, numbered 1–6. Click a number to jump in; the same row in the toolbar switches between pads.
 - Click a cell to edit it. Formulas must start with `=`.
 - Select rows/columns by clicking their numbers/letters, then use the toolbar **Delete** button.
 - **Save / Export** downloads the edited file.

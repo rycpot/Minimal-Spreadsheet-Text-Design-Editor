@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Minimal Spreadsheet, Text & Design Editor: Runs Local, Works Offline",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "description": "Open and edit spreadsheets, text and code files, and make simple image designs. Everything stays in your browser.",
   "icons": {
     "16": "icons/icon16.png",
