@@ -2319,11 +2319,10 @@ body.mode-home .grid-wrapper.home-empty { margin-bottom: 12px; }
 .home-btn:focus-visible,
 .home-bm-add:focus-visible,
 .home-bm-row:focus-visible,
-.home-scratch:focus-visible,
-.home-scratch-clear:focus-visible,
+.scratch-num:focus-visible,
+.scratch-slot-clear:focus-visible,
 .home-bm-del:focus-visible { outline: 2px solid rgba(53, 131, 235, 0.6); outline-offset: 2px; }
-.home-bm-row:focus-visible,
-.home-scratch:focus-visible { outline-offset: -2px; }
+.home-bm-row:focus-visible { outline-offset: -2px; }
 
 /* Google Sheet link popover (floats, so opening it never moves anything). */
 .home-gsheet { position: relative; min-width: 0; display: flex; }
@@ -2473,22 +2472,18 @@ body.mode-home .grid-wrapper.home-empty { margin-bottom: 12px; }
 .home-bm-add .ui-icon { width: 11px; height: 11px; flex-basis: 11px; stroke-width: 2.4; }
 .home-bm-add:hover span { text-decoration: underline; text-underline-offset: 3px; }
 
-/* ----- Scratchpad (pinned to the bottom of its column) ----- */
+/* ----- Scratch pads 1-6 (pinned to the bottom of its column) ----- */
 .home-scratch {
   position: relative;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 11px;
-  min-height: 53px;
-  padding: 0 14px;
+  padding: 10px 14px 8px;
   border-top: 1px solid #edf0f4;
   border-radius: 0 0 15px 15px;
   background: #fbfcfe;
-  cursor: pointer;
-  transition: background 0.12s ease;
 }
-.home-scratch:hover { background: color-mix(in srgb, var(--col-tint) 45%, #fff); }
 .home-scratch-icon {
   flex: 0 0 auto;
   display: grid;
@@ -2502,30 +2497,88 @@ body.mode-home .grid-wrapper.home-empty { margin-bottom: 12px; }
   color: var(--col-ink);
 }
 .home-scratch-icon .ui-icon { width: 16px; height: 16px; flex-basis: 16px; }
-.home-scratch-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.home-scratch-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .home-scratch-title { color: var(--col-ink); font-size: 12.5px; font-weight: 700; line-height: 1.3; }
-.home-scratch-sub { display: flex; min-width: 0; color: #a2a6b3; font-size: 11px; font-style: italic; line-height: 1.3; white-space: pre; }
-.home-scratch-sub > span[data-role="snippet"] { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.home-scratch-sub > span:not([data-role="snippet"]) { flex: 0 0 auto; }
-.home-scratch-clear {
-  flex: 0 0 auto;
+
+/* One numbered circle per pad. Shared by the home tiles and the toolbar's
+   #scratchBar; the colours come from --col-* (set per column / per data-kind). */
+.scratch-slots { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.scratch-slot { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 26px; }
+.scratch-num {
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   padding: 0;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  background: transparent;
-  color: #a2a6b3;
+  border: 1.5px dashed color-mix(in srgb, var(--col-accent) 55%, #fff);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--col-ink-soft);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+.scratch-slot.is-saved .scratch-num { border-style: solid; }
+.scratch-slot.is-filled .scratch-num {
+  border: 1.5px solid color-mix(in srgb, var(--col-accent) 70%, #fff);
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--col-accent) 18%, #fff), color-mix(in srgb, var(--col-accent) 36%, #fff));
+  color: var(--col-ink);
+}
+.scratch-num:hover { transform: translateY(-1px); border-color: var(--col-accent); background: color-mix(in srgb, var(--col-tint) 70%, #fff); }
+.scratch-slot.is-current .scratch-num {
+  border: 1.5px solid var(--col-accent);
+  background: var(--col-accent);
+  color: #fff;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px color-mix(in srgb, var(--col-accent) 45%, #fff);
+  cursor: default;
+  transform: none;
+}
+.scratch-slot-time { color: #a2a6b3; font-size: 10px; font-style: italic; line-height: 1.2; white-space: nowrap; }
+.scratch-slot-clear {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: 1px solid #e3e6eb;
+  border-radius: 50%;
+  background: #fff;
+  color: #8b909c;
   cursor: pointer;
   opacity: 0;
+  transition: opacity 0.12s ease;
 }
-.home-scratch-clear .ui-icon { width: 13px; height: 13px; flex-basis: 13px; }
-.home-scratch:hover .home-scratch-clear,
-.home-scratch:focus-within .home-scratch-clear,
-.home-scratch-clear:focus-visible { opacity: 1; }
-.home-scratch-clear:hover { border-color: #f4c6c1; background: #fdeceb; color: var(--danger); }
+.scratch-slot-clear .ui-icon { width: 9px; height: 9px; flex-basis: 9px; stroke-width: 2.6; }
+.scratch-slot:hover .scratch-slot-clear,
+.scratch-slot:focus-within .scratch-slot-clear { opacity: 1; }
+.scratch-slot-clear:hover { border-color: #f4c6c1; background: #fdeceb; color: var(--danger); }
+
+/* Toolbar copy: just the six numbers, shown while a scratch pad is open. */
+.scratch-bar { display: flex; align-items: center; gap: 4px; margin-left: 4px; }
+.scratch-bar[hidden] { display: none; }
+.scratch-bar .scratch-slot { min-width: 0; }
+.scratch-bar .scratch-num { width: 21px; height: 21px; font-size: 11px; }
+/* The sheet toolbar is the fullest one: with the pad row in it, drop the text labels
+   of the row/column tools (icons + tooltips stay) until there's room for them. */
+@media (max-width: 1500px) {
+  body.scratch-open #deleteBtn > span,
+  body.scratch-open #addRowBtn > span,
+  body.scratch-open #addColBtn > span,
+  body.scratch-open #clipBtn > span { display: none; }
+  body.scratch-open #deleteBtn,
+  body.scratch-open #addRowBtn,
+  body.scratch-open #addColBtn,
+  body.scratch-open #clipBtn { padding-inline: 9px; }
+}
+.scratch-bar[data-kind="text"] { --col-accent: #a06be0; --col-tint: #f0e6fc; --col-ink: #47238a; --col-ink-soft: #7247b8; }
+.scratch-bar[data-kind="sheet"] { --col-accent: #8cc63f; --col-tint: #eaf5d6; --col-ink: #3a5a0c; --col-ink-soft: #5f8a24; }
+.scratch-bar[data-kind="design"] { --col-accent: #f06fae; --col-tint: #fde4f0; --col-ink: #85174f; --col-ink-soft: #b04478; }
 
 /* ----- Narrow windows: stack the columns, the panel scrolls ----- */
 @media (max-width: 960px) {

@@ -61,9 +61,10 @@
     selectedId: null,          // 'canvas' | layer id | null
     clipboard: null,           // layer data copied with Ctrl/Cmd+C, pasted (offset) with Ctrl/Cmd+V
     history: [], hIndex: -1,
-    boundToScratch: false,     // true when the current session was opened via the design scratchpad (see enter/leave)
-    scratchHistory: null, scratchHIndex: -1, // undo/redo stashed here across leave()/enter() so a scratchpad Clear + reopen can still be undone
-    scratchAssets: null,       // asset blobs (images/SVGs) stashed alongside scratchHistory so a resumed history's layers still have something to render
+    boundScratchId: null,      // scratch pad key when the current session was opened as a design pad (see enter/leave)
+    scratchStash: new Map(),   // pad key -> { history, hIndex, assets }: undo/redo (plus the asset blobs its layers
+                               // reference) stashed across leave()/enter() so a pad's Clear + reopen, or a switch
+                               // to another pad and back, can still be undone
     view: { scale: 1, auto: true },
     editing: null,             // in-place text editor { id, ta, ... }
     cropping: null,
@@ -1797,8 +1798,8 @@
     syncToolbar();
     // Clearing the scratchpad also drops any "scratchpad_<dropped file>" name it picked up,
     // back to the plain default (not for a design opened outside the scratchpad).
-    if (state.scratchId === 'design' && state.title !== SCRATCH_DEFAULT_NAMES.design) {
-      state.title = SCRATCH_DEFAULT_NAMES.design;
+    if (scratchKind(state.scratchId) === 'design' && state.title !== scratchDefaultName(state.scratchId)) {
+      state.title = scratchDefaultName(state.scratchId);
       el.fileName.textContent = state.title;
     }
     showToast('Cleared — Ctrl+Z brings it back', 2600);
@@ -2048,6 +2049,10 @@
     let tpl = null;
     if (opts.imageFile) asset = await createRasterAsset(opts.imageFile); // throws if it isn't a readable image — before anything on screen changes
     if (opts.templateText) tpl = await prepareTemplate(opts.templateText); // likewise for a damaged design file
+    // Opening a design while one is already on screen (e.g. switching between design
+    // scratch pads): leave the old one properly first, so a pad's undo history gets
+    // stashed and a regular design's image blobs get freed.
+    if (S.active) leave();
 
     state.mode = 'design';
     document.body.classList.add('mode-design');
@@ -2076,17 +2081,19 @@
     // deleted. When a stash exists, its current entry replaces whatever opts would otherwise
     // have built, so what ends up on screen always matches S.history[S.hIndex] — otherwise
     // Undo can restore a snapshot that doesn't match what was actually just drawn.
-    const resuming = !!(opts.resume && S.scratchHistory && S.scratchHistory.length);
+    const stash = opts.resume ? S.scratchStash.get(opts.resume) : null;
+    if (opts.resume) S.scratchStash.delete(opts.resume);
+    const resuming = !!(stash && stash.history.length);
     let resumedCanvas = null, resumedLayers = null;
     if (resuming) {
-      const snap = JSON.parse(S.scratchHistory[S.scratchHIndex]);
+      const snap = JSON.parse(stash.history[stash.hIndex]);
       resumedCanvas = snap.canvas; resumedLayers = snap.layers;
       w = resumedCanvas.w; h = resumedCanvas.h;
     }
     // resetModel() clears assets, so the ones decoded above (or stashed by leave(), for a
     // resume) are re-registered right after it.
     resetModel(w, h);
-    if (resuming && S.scratchAssets) { for (const [id, a] of S.scratchAssets) S.assets.set(id, a); }
+    if (resuming) { for (const [id, a] of stash.assets) S.assets.set(id, a); }
     if (asset) S.assets.set(asset.id, asset);
     if (resuming) {
       M.canvas = resumedCanvas;
@@ -2112,16 +2119,13 @@
     applyCanvasToStage(); // sizes the artboard, fills the W/H boxes and fits it in the window
     for (const l of M.layers) addNodeFor(l);
     if (resuming) {
-      S.history = S.scratchHistory;
-      S.hIndex = S.scratchHIndex;
+      S.history = stash.history;
+      S.hIndex = stash.hIndex;
     } else {
       S.history = [snapshot()];
       S.hIndex = 0;
     }
-    S.scratchHistory = null;
-    S.scratchHIndex = -1;
-    S.scratchAssets = null;
-    S.boundToScratch = !!opts.resume;
+    S.boundScratchId = opts.resume || null;
     fitView();
     updateTransformer();
     renderLayers();
@@ -2153,11 +2157,9 @@
     // Stash undo/redo — and the asset blobs those layers reference — for a scratchpad
     // session so reopening it (enter with opts.resume) can restore it fully; a non-scratch
     // session (an opened file/image/template) just discards everything as before.
-    if (S.boundToScratch) {
-      S.scratchHistory = S.history; S.scratchHIndex = S.hIndex;
-      S.scratchAssets = S.assets; S.assets = new Map(); // hand the blobs off intact (not revoked below)
-    } else {
-      S.scratchHistory = null; S.scratchHIndex = -1; S.scratchAssets = null;
+    if (S.boundScratchId) {
+      S.scratchStash.set(S.boundScratchId, { history: S.history, hIndex: S.hIndex, assets: S.assets });
+      S.assets = new Map(); // hand the blobs off intact (not revoked below)
     }
     for (const a of S.assets.values()) { try { URL.revokeObjectURL(a.url); } catch (e) { /* ignore */ } }
     S.assets.clear();
@@ -2168,8 +2170,20 @@
     if (state.mode === 'design') state.mode = 'home';
   }
 
+  // Drops the undo/redo stashed for a design pad (a file was dropped into it, so that
+  // history no longer matches what the pad holds) and frees the image blobs it kept.
+  function forgetScratch(id) {
+    const stash = S.scratchStash.get(id);
+    if (!stash) return;
+    S.scratchStash.delete(id);
+    for (const [assetId, a] of stash.assets) {
+      if (S.assets.get(assetId) === a) continue; // still on screen — not ours to revoke
+      try { URL.revokeObjectURL(a.url); } catch (e) { /* ignore */ }
+    }
+  }
+
   window.Design = {
-    enter, leave, undo, redo, exportImage, clearAll,
+    enter, leave, undo, redo, exportImage, clearAll, forgetScratch,
     isActive: () => S.active,
     DEFAULT_W, DEFAULT_H,
     // for tests / debugging
