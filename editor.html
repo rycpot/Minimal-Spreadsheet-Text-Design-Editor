@@ -116,6 +116,13 @@
       <button id="dItalic" class="btn btn-icon db-i" type="button" disabled aria-pressed="false" title="Italic" aria-label="Italic">I</button>
       <input id="dColor" class="db-swatch" type="color" value="#202124" disabled title="Color of the selected text or shape" aria-label="Color" />
     </div>
+    <span class="divider"></span>
+    <div class="db-group">
+      <button id="dShadow" class="btn btn-icon" type="button" disabled aria-pressed="false" title="Shadow: a soft shadow behind the selected text" aria-label="Shadow"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h10M13 5v13" opacity="0.35" transform="translate(1.6 1.6)"/><path d="M6 5h10M11 5v13"/></svg></button>
+      <button id="dBox" class="btn btn-icon" type="button" disabled aria-pressed="false" title="Background box behind the selected text" aria-label="Background box"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M8.5 9h7M12 9v6.5"/></svg></button>
+      <input id="dBoxColor" class="db-swatch" type="color" value="#000000" disabled title="Background box color" aria-label="Background box color" />
+      <input id="dBoxOpacity" class="db-range" type="range" min="10" max="100" step="5" value="50" disabled title="Background box opacity" aria-label="Background box opacity" />
+    </div>
   </div>
 
   <div id="formulaBar" class="formula-bar">

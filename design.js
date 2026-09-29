@@ -80,6 +80,8 @@
 
   const uid = (p) => `${p}${Date.now().toString(36)}${(S.idSeq++).toString(36)}`;
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  // Background box padding around text, as a fraction of the font size.
+  const TEXT_BOX_PAD = 0.3;
   const getLayer = (id) => M.layers.find((l) => l.id === id) || null;
   const $ = (id) => document.getElementById(id);
 
@@ -210,6 +212,33 @@
       });
     } else if (layer.type === 'text') {
       node = new Konva.Text({ lineHeight: 1.2, wrap: 'word', padding: 0 });
+      // Background box: drawn first, then Konva's own text drawing on top.
+      node.sceneFunc(function (ctx, shape) {
+        const l = shape.getAttr('boxLayer');
+        if (l && l.box) {
+          // Native canvas context: Konva's wrapper doesn't pass fillStyle through,
+          // and it has already set the text's shadow, which the box shouldn't get.
+          const c = ctx._context;
+          const pad = l.fontSize * TEXT_BOX_PAD;
+          const x = -pad, y = -pad, w = shape.width() + 2 * pad, h = shape.height() + 2 * pad;
+          const r = Math.min(l.fontSize * 0.2, w / 2, h / 2);
+          c.save();
+          c.shadowColor = 'rgba(0,0,0,0)';
+          c.shadowBlur = 0;
+          c.globalAlpha *= clamp(l.boxOpacity == null ? 0.5 : l.boxOpacity, 0.1, 1);
+          c.fillStyle = l.boxFill || '#000000';
+          c.beginPath();
+          c.moveTo(x + r, y);
+          c.arcTo(x + w, y, x + w, y + h, r);
+          c.arcTo(x + w, y + h, x, y + h, r);
+          c.arcTo(x, y + h, x, y, r);
+          c.arcTo(x, y, x + w, y, r);
+          c.closePath();
+          c.fill();
+          c.restore();
+        }
+        shape._sceneFunc(ctx);
+      });
     } else {
       const strokeOnly = layer.shape === 'line' || layer.shape === 'arrow';
       if (layer.shape === 'rect') {
@@ -238,6 +267,11 @@
         text: layer.text, fontFamily: layer.fontFamily, fontSize: layer.fontSize,
         fontStyle: layer.fontStyle || 'normal', fill: layer.fill,
         width: layer.autoWidth ? 'auto' : layer.width,
+        boxLayer: layer,
+        // Soft shadow, as in the subtitle app's Merge tab: offset and blur scale with the size.
+        shadowEnabled: !!layer.shadow, shadowColor: '#000000', shadowOpacity: 0.6,
+        shadowBlur: layer.fontSize * 0.06,
+        shadowOffset: { x: layer.fontSize * 0.03, y: layer.fontSize * 0.03 },
       });
     } else {
       const strokeOnly = layer.shape === 'line' || layer.shape === 'arrow';
@@ -1223,6 +1257,10 @@
     d.bold.disabled = !isText || busy;
     d.italic.disabled = !isText || busy;
     d.color.disabled = !colorable || busy;
+    d.shadow.disabled = !isText || busy;
+    d.box.disabled = !isText || busy;
+    d.boxColor.disabled = !isText || busy || !(l && l.box);
+    d.boxOpacity.disabled = !isText || busy || !(l && l.box);
     d.crop.disabled = !croppable && !busy;
     d.crop.classList.toggle('active', busy);
     d.crop.querySelector('span').textContent = busy ? 'Done' : 'Crop';
@@ -1239,9 +1277,17 @@
       d.italic.classList.toggle('active', /italic/.test(l.fontStyle));
       d.bold.setAttribute('aria-pressed', String(/bold/.test(l.fontStyle)));
       d.italic.setAttribute('aria-pressed', String(/italic/.test(l.fontStyle)));
+      d.shadow.classList.toggle('active', !!l.shadow);
+      d.shadow.setAttribute('aria-pressed', String(!!l.shadow));
+      d.box.classList.toggle('active', !!l.box);
+      d.box.setAttribute('aria-pressed', String(!!l.box));
+      d.boxColor.value = l.boxFill || '#000000';
+      if (document.activeElement !== d.boxOpacity) d.boxOpacity.value = Math.round((l.boxOpacity == null ? 0.5 : l.boxOpacity) * 100);
     } else {
       d.bold.classList.remove('active'); d.italic.classList.remove('active');
       d.bold.setAttribute('aria-pressed', 'false'); d.italic.setAttribute('aria-pressed', 'false');
+      d.shadow.classList.remove('active'); d.box.classList.remove('active');
+      d.shadow.setAttribute('aria-pressed', 'false'); d.box.setAttribute('aria-pressed', 'false');
     }
     if (colorable) d.color.value = l.fill;
     for (const id of ['dAddImage', 'dAddText', 'dShapesBtn', 'dApply']) { const b = $(id); if (b) b.disabled = busy; }
@@ -1767,6 +1813,8 @@
           ...base, text: String(l.text == null ? '' : l.text), fontFamily: String(l.fontFamily || 'Arial'),
           fontSize: clamp(num(l.fontSize, 32), 4, 999), fontStyle: ['normal', 'bold', 'italic', 'bold italic'].includes(l.fontStyle) ? l.fontStyle : 'normal',
           fill: colour(l.fill, '#202124'), autoWidth: l.autoWidth !== false, width: pos(l.width, 200),
+          shadow: !!l.shadow, box: !!l.box, boxFill: colour(l.boxFill, '#000000'),
+          boxOpacity: clamp(num(l.boxOpacity, 0.5), 0.1, 1),
         });
       } else if (l.type === 'shape' && SHAPES.some((s) => s.id === l.shape)) {
         const shapeLayer = {
@@ -1815,6 +1863,7 @@
       centerH: $('dCenterH'), centerV: $('dCenterV'),
       w: $('dW'), h: $('dH'), apply: $('dApply'), canvasColor: $('dCanvasColor'),
       fontBtn: $('dFontBtn'), fontMenu: $('dFontMenu'), fontSize: $('dFontSize'), bold: $('dBold'), italic: $('dItalic'), color: $('dColor'),
+      shadow: $('dShadow'), box: $('dBox'), boxColor: $('dBoxColor'), boxOpacity: $('dBoxOpacity'),
       zoomOut: $('dZoomOut'), zoomIn: $('dZoomIn'), zoomLabel: $('dZoomLabel'), fit: $('dFit'),
       imageInput: $('dImageInput'), fontFile: $('dFontFile'),
     };
@@ -1901,6 +1950,27 @@
       positionTextEditor();
     });
     d.color.addEventListener('change', () => { if (getLayer(S.selectedId)) commit(); });
+
+    // Shadow and background box for text.
+    const toggleText = (key) => () => {
+      const l = selectedText();
+      if (!l) return;
+      updateSelectedTextLive({ [key]: !l[key] });
+      S.contentLayer.batchDraw();
+      commit();
+      syncToolbar();
+    };
+    d.shadow.addEventListener('click', toggleText('shadow'));
+    d.box.addEventListener('click', toggleText('box'));
+    d.boxColor.addEventListener('input', () => {
+      if (updateSelectedTextLive({ boxFill: d.boxColor.value })) S.contentLayer.batchDraw();
+    });
+    d.boxColor.addEventListener('change', () => { if (selectedText()) commit(); });
+    d.boxOpacity.addEventListener('input', () => {
+      const v = clamp((parseFloat(d.boxOpacity.value) || 50) / 100, 0.1, 1);
+      if (updateSelectedTextLive({ boxOpacity: v })) S.contentLayer.batchDraw();
+    });
+    d.boxOpacity.addEventListener('change', () => { if (selectedText()) commit(); });
 
     d.zoomIn.addEventListener('click', () => zoomTo(S.view.scale * 1.25));
     d.zoomOut.addEventListener('click', () => zoomTo(S.view.scale / 1.25));
