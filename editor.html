@@ -19,6 +19,7 @@
       <input type="file" id="fileInput" hidden />
       <span id="fileName" class="file-name">No file loaded</span>
       <button id="renameTitleBtn" class="icon-btn" title="Rename title" hidden><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4.2-1 9.9-9.9a2 2 0 0 0-2.8-2.8L5.4 16.2z"/><path d="M13.8 7.2l3 3"/></svg></button>
+      <div id="scratchBar" class="scratch-bar" role="group" aria-label="Scratch pads" hidden></div>
       <button id="bookmarkStarBtn" class="icon-btn bookmark-star-btn" type="button" title="Bookmark this file" aria-pressed="false" hidden><svg class="ui-icon ui-icon-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></button>
     </div>
 
@@ -141,7 +142,7 @@
     <div id="dropzone" class="dropzone" role="region" aria-label="Drop a spreadsheet, text or design file anywhere in this area to open it">
       <div class="home-top">
         <p class="home-drop-pill"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11.5"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M4 15v3.5a1.5 1.5 0 0 0 1.5 1.5h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg><span>Drag &amp; drop a file anywhere</span></p>
-        <span id="homeSummary" class="home-summary">0 bookmarks · 3 scratchpads</span>
+        <span id="homeSummary" class="home-summary">0 bookmarks · 18 scratch pads</span>
         <label class="home-search">
           <svg class="ui-icon home-search-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>
           <input id="homeSearch" class="home-search-input" type="search" placeholder="Search all bookmarks…" aria-label="Search all bookmarks" title="Search all bookmarks (press / to focus)" autocomplete="off" spellcheck="false" />
@@ -175,13 +176,12 @@
                 <button type="button" class="home-bm-add" data-role="add"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add bookmark</span></button>
               </div>
             </div>
-            <div class="home-scratch" data-scratch="text" role="button" tabindex="0" aria-label="Open your scratch text file">
+            <div class="home-scratch" data-scratch="text" role="group" aria-label="Scratch texts">
               <span class="home-scratch-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg></span>
               <span class="home-scratch-body">
-                <span class="home-scratch-title">Scratch text</span>
-                <span class="home-scratch-sub"><span data-role="snippet">Empty — click to start</span><span class="home-scratch-sep" aria-hidden="true"> · </span><span data-role="time">Not saved yet</span></span>
+                <span class="home-scratch-title">Scratch texts</span>
+                <span class="scratch-slots" data-role="slots"></span>
               </span>
-              <button type="button" class="home-scratch-clear" data-role="clear" title="Clear this scratchpad" aria-label="Clear scratch text" hidden><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
             </div>
           </section>
           <section class="home-col home-col-sheets" data-type="sheet" aria-labelledby="homeTitle-sheet">
@@ -222,13 +222,12 @@
                 <button type="button" class="home-bm-add" data-role="add"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add bookmark</span></button>
               </div>
             </div>
-            <div class="home-scratch" data-scratch="sheet" role="button" tabindex="0" aria-label="Open your scratch sheet">
+            <div class="home-scratch" data-scratch="sheet" role="group" aria-label="Scratch sheets">
               <span class="home-scratch-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M4 14.5h16M9.5 5v14M15 5v14"/></svg></span>
               <span class="home-scratch-body">
-                <span class="home-scratch-title">Scratch sheet</span>
-                <span class="home-scratch-sub"><span data-role="snippet">Empty — click to start</span><span class="home-scratch-sep" aria-hidden="true"> · </span><span data-role="time">Not saved yet</span></span>
+                <span class="home-scratch-title">Scratch sheets</span>
+                <span class="scratch-slots" data-role="slots"></span>
               </span>
-              <button type="button" class="home-scratch-clear" data-role="clear" title="Clear this scratchpad" aria-label="Clear scratch sheet" hidden><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
             </div>
           </section>
           <section class="home-col home-col-design" data-type="design" aria-labelledby="homeTitle-design">
@@ -257,13 +256,12 @@
                 <button type="button" class="home-bm-add" data-role="add" title="Only saved .design.json templates can be bookmarked"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Add bookmark</span></button>
               </div>
             </div>
-            <div class="home-scratch" data-scratch="design" role="button" tabindex="0" aria-label="Open your scratch design">
+            <div class="home-scratch" data-scratch="design" role="group" aria-label="Scratch designs">
               <span class="home-scratch-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h16v15H4z"/><path d="M4 15l4.5-4.5 3.5 3.5 3-3 5 5"/><circle cx="9" cy="9" r="1.3"/></svg></span>
               <span class="home-scratch-body">
-                <span class="home-scratch-title">Scratch design</span>
-                <span class="home-scratch-sub"><span data-role="snippet">Empty — click to start</span><span class="home-scratch-sep" aria-hidden="true"> · </span><span data-role="time">Not saved yet</span></span>
+                <span class="home-scratch-title">Scratch designs</span>
+                <span class="scratch-slots" data-role="slots"></span>
               </span>
-              <button type="button" class="home-scratch-clear" data-role="clear" title="Clear this scratchpad" aria-label="Clear scratch design" hidden><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
             </div>
           </section>
       </div>

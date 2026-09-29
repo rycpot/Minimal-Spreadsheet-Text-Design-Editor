@@ -15,6 +15,13 @@
   `.numbers`, …) or any plain-text file (see below). The home screen also
   has **Create blank text**, **Create blank spreadsheet** and **Import
   from Google Sheet**
+- **Scratch pads** — each column has six numbered scratch pads (1–6) at
+  its bottom: six texts, six sheets and six designs. Click a number to
+  open that pad; everything you do in it is saved automatically in the
+  browser, and the small label under each number shows when it was last
+  saved. While a pad is open, the same 1–6 row sits in the toolbar so you
+  can jump between pads. Hover a number on the home screen and click its
+  **✕** to clear that pad
 - **Password-protected `.xlsx` files** are supported: if the file is
   encrypted, you'll be prompted for its password. Decryption happens
   entirely locally in your browser (via the Web Crypto API) — the

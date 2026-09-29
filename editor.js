@@ -23,12 +23,13 @@ const state = {
                           // while browsing another sheet to pick a cross-sheet reference)
   formulaHomeCell: null,  // { r, c } on formulaHomeSheet, for the same reason
   dirty: false,
-  scratchId: null,      // 'sheet' | 'text' | 'design' | null — which home-screen scratchpad (if any) this document is
+  scratchId: null,      // scratch pad key (see scratchKey()) of the open document, or null if it isn't one
   clipEnabled: false, // Clip toggle: multi-line cells collapse to one row, ending with "…"
   undoStack: [],
   redoStack: [],
-  scratchSheetUndoStack: null, // sheet's undoStack/redoStack, stashed across leave()/reopen of the
-  scratchSheetRedoStack: null, // scratch sheet so Undo survives a trip home — mirrors scratch design's S.scratchHistory.
+  scratchSheetStash: new Map(), // scratch pad key -> { undo, redo }: a sheet pad's undo/redo stacks, stashed
+                                // across leave/reopen so Undo survives a trip home or a switch to another pad
+                                // (mirrors scratch design's S.scratchStash).
   fileHandle: null,    // FileSystemFileHandle for the current document, when it was opened via the
                         // native file picker, a handle-capable drag/drop, or a bookmark — null
                         // otherwise (classic <input type=file>, blank/scratch/Google-import docs).
@@ -118,6 +119,7 @@ const el = {
   loadingStage: document.getElementById('loadingStage'),
   loadingPct: document.getElementById('loadingPct'),
   scratchTiles: Array.from(document.querySelectorAll('.home-scratch')),
+  scratchBar: document.getElementById('scratchBar'),
   bookmarkStarBtn: document.getElementById('bookmarkStarBtn'),
   homeCols: Array.from(document.querySelectorAll('.home-col')),
   homeSearch: document.getElementById('homeSearch'),
@@ -258,15 +260,22 @@ function endLoading() {
 /* ------------------------------------------------------------------ *
  * Scratchpads (Sheet / Text / Design)
  * ------------------------------------------------------------------ *
- * Three fixed, always-there documents shown on the home screen. Unlike a
+ * Six fixed, always-there documents per kind (text, sheet, design), shown as
+ * the numbered circles 1-6 on each home-screen column and, while one is open,
+ * in the toolbar (#scratchBar). Unlike a
  * regular file, a scratchpad is never "opened" from disk and never needs an
  * explicit save: every change is written to a local IndexedDB database a
  * moment after you make it, and reopening the same tile later (even after
  * the tab was closed or crashed) picks up right where you left off. Nothing
  * here ever leaves the browser.
  *
- * state.scratchId names which one (if any) of the three the open document
- * currently is ('sheet' | 'text' | 'design' | null). It's set by
+ * Each pad is one IndexedDB record keyed by scratchKey(kind, slot): pad 1 of
+ * each kind keeps the original single-scratchpad key ('text' | 'sheet' |
+ * 'design'), so anything saved before there were six carries over as pad 1;
+ * pads 2-6 are 'text-2' ... 'design-6'.
+ *
+ * state.scratchId holds the key of the pad the open document currently is
+ * (or null). It's set by
  * openScratchpad() right after the document is loaded, and cleared by
  * leaveScratchpad() — called at the top of every function that tears down
  * the current document (activateWorkbook, enterTextMode, startDesign,
@@ -278,8 +287,16 @@ function endLoading() {
 const SCRATCH_DB_NAME = 'sheetEditorScratchpads';
 const SCRATCH_STORE = 'pads';
 const SCRATCH_AUTOSAVE_DEBOUNCE = 600; // ms of quiet after an edit before it's written
-const SCRATCH_LABELS = { sheet: 'Scratch sheet', text: 'Scratch text', design: 'Scratch design' };
-const SCRATCH_DEFAULT_NAMES = { sheet: 'Scratch sheet.xlsx', text: 'Scratch text.txt', design: 'Scratch design' };
+const SCRATCH_KINDS = ['text', 'sheet', 'design'];
+const SCRATCH_SLOTS = 6; // pads per kind
+const SCRATCH_KIND_LABELS = { sheet: 'Scratch sheet', text: 'Scratch text', design: 'Scratch design' };
+const SCRATCH_KIND_EXTS = { sheet: '.xlsx', text: '.txt', design: '' };
+
+function scratchKey(kind, slot) { return slot === 1 ? kind : `${kind}-${slot}`; }
+function scratchKind(id) { return id ? id.split('-')[0] : null; }
+function scratchSlot(id) { return Number(id.split('-')[1] || 1); }
+function scratchLabel(id) { return `${SCRATCH_KIND_LABELS[scratchKind(id)]} ${scratchSlot(id)}`; } // e.g. "Scratch text 3"
+function scratchDefaultName(id) { return scratchLabel(id) + SCRATCH_KIND_EXTS[scratchKind(id)]; } // e.g. "Scratch text 3.txt"
 
 // Bookmarks share the scratchpad DB (bumped to version 2) rather than a second
 // database — same infrastructure, a new object store. onupgradeneeded only
@@ -327,12 +344,32 @@ async function scratchPut(record) {
   const tx = db.transaction(SCRATCH_STORE, 'readwrite');
   tx.objectStore(SCRATCH_STORE).put(record);
   await scratchTxDone(tx);
+  scratchMeta.set(record.id, { updatedAt: record.updatedAt, empty: !!record.empty });
+  paintScratchSlots();
 }
 async function scratchDelete(id) {
   const db = await openScratchDb();
   const tx = db.transaction(SCRATCH_STORE, 'readwrite');
   tx.objectStore(SCRATCH_STORE).delete(id);
   await scratchTxDone(tx);
+  scratchMeta.delete(id);
+  paintScratchSlots();
+}
+
+// scratch pad key -> { updatedAt, empty } for every saved pad. Filled once from
+// IndexedDB at startup (loadScratchMeta) and kept current by scratchPut/scratchDelete,
+// so painting the 1-6 circles never has to read the (possibly large) payloads back.
+const scratchMeta = new Map();
+async function loadScratchMeta() {
+  let records = [];
+  try { records = await scratchGetAll(); } catch (err) { /* IndexedDB unavailable (private mode, etc.) — every pad just shows as empty */ }
+  scratchMeta.clear();
+  for (const r of records) {
+    // Records saved before pads had an `empty` flag had a text preview instead; an
+    // empty preview is the closest match.
+    scratchMeta.set(r.id, { updatedAt: r.updatedAt, empty: 'empty' in r ? !!r.empty : !r.snippet });
+  }
+  paintScratchSlots();
 }
 
 /* ------------------------------------------------------------------ *
@@ -533,7 +570,7 @@ function renderHomeBookmarks() {
       listEl.appendChild(li);
     }
   }
-  el.homeSummary.textContent = `${total} bookmark${total === 1 ? '' : 's'} \u00b7 ${el.scratchTiles.length} scratchpads`;
+  el.homeSummary.textContent = `${total} bookmark${total === 1 ? '' : 's'} \u00b7 ${el.scratchTiles.length * SCRATCH_SLOTS} scratch pads`;
 }
 
 // Reloads all three bookmark tables from IndexedDB. Cheap and safe to call any
@@ -686,29 +723,20 @@ document.addEventListener('keydown', (e) => {
 });
 refreshBookmarkPanels();
 
-// A short, human line describing what's currently on the sheet/text/canvas,
-// shown on the home-screen tile. Never throws — worst case, an empty string.
-function sheetScratchSnippet(ws) {
+// Whether a pad holds anything worth showing as "filled" on its circle.
+// Never throws — worst case it reports "not empty".
+function sheetWorkbookIsEmpty(wb) {
   try {
-    if (!ws || !ws['!ref']) return '';
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    const parts = [];
-    for (let r = range.s.r; r <= range.e.r && r <= range.s.r + 6 && parts.length < 6; r++) {
-      for (let c = range.s.c; c <= range.e.c && c <= range.s.c + 8 && parts.length < 6; c++) {
-        const cell = ws[XLSX.utils.encode_cell({ r, c })];
-        if (cell && cell.v !== undefined && cell.v !== null && cell.v !== '') {
-          const v = String(cell.v).trim();
-          if (v) parts.push(v.length > 22 ? v.slice(0, 22) + '\u2026' : v);
-        }
+    for (const name of wb.SheetNames) {
+      const ws = wb.Sheets[name];
+      for (const k in ws) {
+        if (k[0] === '!') continue;
+        const cell = ws[k];
+        if (cell && ((cell.v !== undefined && cell.v !== null && cell.v !== '') || cell.f)) return false;
       }
     }
-    return parts.join('  \u00b7  ');
-  } catch (err) { return ''; }
-}
-function textScratchSnippet(text) {
-  const line = (text || '').split('\n').find((l) => l.trim() !== '');
-  if (!line) return '';
-  return line.length > 90 ? line.slice(0, 90) + '\u2026' : line;
+    return true;
+  } catch (err) { return false; }
 }
 
 // Builds the record to store for whichever scratchpad is open right now.
@@ -716,30 +744,28 @@ function textScratchSnippet(text) {
 // need debouncing itself (that's scheduleScratchAutosave's job).
 async function buildScratchRecord(id) {
   const now = new Date().toISOString();
-  if (id === 'text') {
+  const kind = scratchKind(id);
+  if (kind === 'text') {
     if (state.mode !== 'text' || !state.text) return null;
     const text = el.textInput.value;
     return {
-      id, updatedAt: now, title: state.title || SCRATCH_DEFAULT_NAMES.text,
-      snippet: textScratchSnippet(text),
+      id, updatedAt: now, title: state.title || scratchDefaultName(id), empty: text === '',
       payload: { text, lang: state.text.lang, langManual: state.text.langManual, wrap: state.text.wrap },
     };
   }
-  if (id === 'sheet') {
+  if (kind === 'sheet') {
     if (state.mode !== 'sheet' || !state.workbook) return null;
     const xlsx = XLSX.write(state.workbook, { type: 'array', bookType: 'xlsx' });
     return {
-      id, updatedAt: now, title: state.title || SCRATCH_DEFAULT_NAMES.sheet,
-      snippet: sheetScratchSnippet(activeSheetObj()),
+      id, updatedAt: now, title: state.title || scratchDefaultName(id), empty: sheetWorkbookIsEmpty(state.workbook),
       payload: { xlsx, activeSheet: state.activeSheet },
     };
   }
-  if (id === 'design') {
+  if (kind === 'design') {
     if (state.mode !== 'design' || !window.Design) return null;
     const tpl = await window.Design._serializeTemplate();
     return {
-      id, updatedAt: now, title: state.title || SCRATCH_DEFAULT_NAMES.design,
-      snippet: `${tpl.layers.length} layer${tpl.layers.length === 1 ? '' : 's'} \u00b7 ${tpl.canvas.w}\u00d7${tpl.canvas.h}`,
+      id, updatedAt: now, title: state.title || scratchDefaultName(id), empty: tpl.layers.length === 0,
       payload: { template: tpl },
     };
   }
@@ -790,15 +816,22 @@ async function leaveScratchpad() {
   clearTimeout(scratchAutosaveTimer);
   const id = state.scratchId;
   // Stash the sheet's undo/redo stacks before whatever teardown comes next (activateWorkbook
-  // or goToHome) wipes them, so reopening this scratchpad later in the same tab — even after
-  // a trip to the homepage — can restore them (see openScratchpad's 'sheet' branch). Mirrors
-  // how scratch design stashes S.history/S.hIndex in leave() (design.js).
-  if (id === 'sheet') {
-    state.scratchSheetUndoStack = state.undoStack;
-    state.scratchSheetRedoStack = state.redoStack;
+  // or goToHome) wipes them, so reopening this pad later in the same tab — even after a trip
+  // to the homepage or to another pad — can restore them (see openScratchpad's 'sheet'
+  // branch). Mirrors how scratch design stashes its history in leave() (design.js).
+  if (scratchKind(id) === 'sheet') {
+    state.scratchSheetStash.set(id, { undo: state.undoStack, redo: state.redoStack });
   }
   state.scratchId = null;
+  paintScratchSlots();
   await flushScratchAutosave(id);
+}
+// A file dropped into an open pad replaces what it held, so any undo history stashed
+// for that pad no longer matches it (called from the "keep it bound" paths in
+// activateWorkbook / enterTextMode / startDesign).
+function forgetScratchHistory(id) {
+  state.scratchSheetStash.delete(id);
+  if (window.Design && window.Design.forgetScratch) window.Design.forgetScratch(id);
 }
 // Best-effort final save if the tab is hidden or closed before the debounce fires.
 document.addEventListener('visibilitychange', () => {
@@ -806,36 +839,47 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', () => { if (state.scratchId) flushScratchAutosaveNow(); });
 
-// Opens one of the three scratchpads: whatever was saved for it, or a blank
-// document the first time. `forceBlank` (used by "clear") skips the saved
-// copy even if one exists.
+// Opens one scratch pad (a key from scratchKey()): whatever was saved for it,
+// or a blank document the first time. `forceBlank` (used by "clear") skips the
+// saved copy even if one exists.
+let scratchOpening = false; // ignore further circle clicks while a pad is still loading
 async function openScratchpad(id, opts) {
   opts = opts || {};
+  if (scratchOpening) return;
+  if (id === state.scratchId && !opts.forceBlank) return; // already on screen
   if (state.dirty && !state.scratchId && !window.confirm('Changes that you made may not be saved.')) return;
+  scratchOpening = true;
+  const kind = scratchKind(id);
+  const label = scratchLabel(id);
+  const defaultName = scratchDefaultName(id);
+  // Leave the pad on screen (if any) first: this saves it and unbinds it, so the
+  // enterTextMode/activateWorkbook/startDesign calls below don't treat the switch as
+  // "a file dropped into the open pad" and rebind it.
+  await leaveScratchpad();
   let rec = null;
   if (!opts.forceBlank) {
     try { rec = await scratchGet(id); } catch (err) { console.error(err); }
   }
   // Design manages its own loading card (via startDesign); Sheet/Text use this one.
-  if (id !== 'design') beginLoading(SCRATCH_LABELS[id], true);
+  if (kind !== 'design') beginLoading(label, true);
   try {
-    if (id === 'text') {
+    if (kind === 'text') {
       const payload = rec && rec.payload;
       await enterTextMode({
-        name: (rec && rec.title) || SCRATCH_DEFAULT_NAMES.text,
+        name: (rec && rec.title) || defaultName,
         text: (payload && payload.text) || '',
         encoding: 'utf-8', bom: false, eol: '\n', eolMixed: false,
-        toast: rec ? `Opened \u201c${rec.title || SCRATCH_DEFAULT_NAMES.text}\u201d` : 'Created a blank text file',
+        toast: rec ? `Opened “${rec.title || defaultName}”` : `Created a blank ${label.toLowerCase()}`,
       });
       if (payload && payload.lang && payload.langManual) setTextLanguage(payload.lang, true);
       if (payload && payload.wrap && state.text) { state.text.wrap = true; applyTextViewFlags(); }
-    } else if (id === 'sheet') {
-      if (!libsLoaded) { setLoading(15, 'Loading spreadsheet engine\u2026'); await ensureLibs((f) => setLoading(15 + 45 * f, 'Loading spreadsheet engine\u2026')); }
+    } else if (kind === 'sheet') {
+      if (!libsLoaded) { setLoading(15, 'Loading spreadsheet engine…'); await ensureLibs((f) => setLoading(15 + 45 * f, 'Loading spreadsheet engine…')); }
       const payload = rec && rec.payload;
       if (payload && payload.xlsx) {
-        setLoading(70, 'Opening scratch sheet\u2026');
+        setLoading(70, `Opening ${label.toLowerCase()}…`);
         const wb = XLSX.read(payload.xlsx, { type: 'array' });
-        await activateWorkbook(wb, rec.title || SCRATCH_DEFAULT_NAMES.sheet, false, `Opened \u201c${rec.title || SCRATCH_DEFAULT_NAMES.sheet}\u201d`);
+        await activateWorkbook(wb, rec.title || defaultName, false, `Opened “${rec.title || defaultName}”`);
         if (payload.activeSheet && state.sheetNames.includes(payload.activeSheet) && payload.activeSheet !== state.activeSheet) {
           state.activeSheet = payload.activeSheet;
           renderSheetTabs();
@@ -845,54 +889,55 @@ async function openScratchpad(id, opts) {
         const ws = { '!ref': XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: BLANK_SHEET_ROWS - 1, c: BLANK_SHEET_COLS - 1 } }) };
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-        await activateWorkbook(wb, SCRATCH_DEFAULT_NAMES.sheet, false, 'Created a blank scratch sheet');
+        await activateWorkbook(wb, defaultName, false, `Created a blank ${label.toLowerCase()}`);
         selectCell(0, 0);
       }
       // Resume: activateWorkbook() always wipes undoStack/redoStack, so restore whatever
-      // was stashed the last time this scratchpad was left (see leaveScratchpad) — the
-      // loaded payload is already whatever was live at that point, since leaving always
-      // flushes an autosave first, so the two stay in step.
-      if (state.scratchSheetUndoStack) {
-        state.undoStack = state.scratchSheetUndoStack;
-        state.redoStack = state.scratchSheetRedoStack || [];
+      // was stashed the last time this pad was left (see leaveScratchpad) — the loaded
+      // payload is already whatever was live at that point, since leaving always flushes
+      // an autosave first, so the two stay in step.
+      const stash = state.scratchSheetStash.get(id);
+      if (stash) {
+        state.undoStack = stash.undo;
+        state.redoStack = stash.redo || [];
         updateUndoRedoButtons();
       }
-      state.scratchSheetUndoStack = null;
-      state.scratchSheetRedoStack = null;
-    } else if (id === 'design') {
+      state.scratchSheetStash.delete(id);
+    } else if (kind === 'design') {
       // startDesign() loads the design tools, resets for design mode and calls
       // Design.enter() — all with its own loading card, started and ended here.
       const payload = rec && rec.payload;
-      // resume: true lets Design.enter() restore any undo/redo history stashed when this
-      // scratchpad was last left, so a Clear + reopen can still be undone (see design.js).
+      // resume: <pad key> lets Design.enter() restore any undo/redo history stashed when
+      // this pad was last left, so a Clear + reopen can still be undone (see design.js).
       if (payload && payload.template) {
-        await startDesign({ templateText: JSON.stringify(payload.template), title: rec.title || SCRATCH_DEFAULT_NAMES.design, resume: true }, SCRATCH_LABELS.design);
+        await startDesign({ templateText: JSON.stringify(payload.template), title: rec.title || defaultName, resume: id }, label);
       } else {
-        await startDesign({ title: SCRATCH_DEFAULT_NAMES.design, resume: true }, SCRATCH_LABELS.design);
+        await startDesign({ title: defaultName, resume: id }, label);
       }
     }
     state.scratchId = id;
     state.dirty = false;
   } catch (err) {
     console.error(err);
-    showToast(`Couldn\u2019t open your ${SCRATCH_LABELS[id].toLowerCase()}.`, 4000);
+    showToast(`Couldn’t open your ${label.toLowerCase()}.`, 4000);
   } finally {
-    if (id !== 'design') endLoading();
-    refreshScratchTiles();
+    if (kind !== 'design') endLoading();
+    scratchOpening = false;
+    paintScratchSlots();
   }
 }
 
 async function clearScratchpad(id) {
-  if (!window.confirm(`Clear your ${SCRATCH_LABELS[id].toLowerCase()}? This can\u2019t be undone.`)) return;
+  const label = scratchLabel(id).toLowerCase();
+  if (!window.confirm(`Clear your ${label}? This can’t be undone.`)) return;
+  const wasOpen = state.scratchId === id;
+  if (wasOpen) await leaveScratchpad(); // its final save must land before the delete, not after
   try { await scratchDelete(id); } catch (err) { console.error(err); }
-  if (state.scratchId === id) {
-    await openScratchpad(id, { forceBlank: true });
-  } else {
-    refreshScratchTiles();
-  }
-  showToast(`Cleared your ${SCRATCH_LABELS[id].toLowerCase()}.`, 2200);
+  if (wasOpen) await openScratchpad(id, { forceBlank: true });
+  showToast(`Cleared your ${label}.`, 2200);
 }
 
+// Full wording for a circle's tooltip / screen-reader label, e.g. "Saved 5 minutes ago".
 function scratchRelativeTime(iso) {
   const then = new Date(iso).getTime();
   if (!isFinite(then)) return '';
@@ -907,49 +952,86 @@ function scratchRelativeTime(iso) {
   if (d < 7) return `Saved ${d} day${d === 1 ? '' : 's'} ago`;
   return `Saved ${new Date(iso).toLocaleDateString()}`;
 }
-
-// Repaints the three home-screen tiles from IndexedDB. Cheap and safe to
-// call any time (page load, returning to the home screen, after a save) —
-// the tiles are simply hidden while a different screen is showing.
-async function refreshScratchTiles() {
-  let records = [];
-  try { records = await scratchGetAll(); } catch (err) { /* IndexedDB unavailable (private mode, etc.) — tiles just stay in their empty state */ }
-  const byId = new Map(records.map((r) => [r.id, r]));
-  for (const tile of el.scratchTiles) {
-    const id = tile.dataset.scratch;
-    const rec = byId.get(id);
-    const snippetEl = tile.querySelector('[data-role="snippet"]');
-    const timeEl = tile.querySelector('[data-role="time"]');
-    const clearBtn = tile.querySelector('[data-role="clear"]');
-    const has = !!rec;
-    tile.classList.toggle('is-empty', !has);
-    if (snippetEl) snippetEl.textContent = has && rec.snippet ? rec.snippet : (has ? 'Empty' : 'Empty \u2014 click to start');
-    if (timeEl) timeEl.textContent = has ? scratchRelativeTime(rec.updatedAt) : 'Not saved yet';
-    if (clearBtn) clearBtn.hidden = !has;
-  }
+// The short form printed under each home-screen circle: "now", "5m", "3h", "2d", "Sep 3".
+function scratchShortTime(iso) {
+  const then = new Date(iso).getTime();
+  if (!isFinite(then)) return '';
+  const m = Math.round(Math.max(0, Date.now() - then) / 60000);
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.round(h / 24);
+  if (d < 7) return `${d}d`;
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-for (const tile of el.scratchTiles) {
-  const id = tile.dataset.scratch;
-  tile.addEventListener('click', (e) => {
-    if (e.target.closest('[data-role="clear"]')) return; // handled below
-    openScratchpad(id);
-  });
-  tile.addEventListener('keydown', (e) => {
-    if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('[data-role="clear"]')) {
-      e.preventDefault();
-      openScratchpad(id);
+// Builds the six numbered circles of one kind into `host` (a home-screen tile's
+// [data-role="slots"], or the toolbar's #scratchBar). Home circles get a time label
+// underneath and a hover ✕ to clear the pad; toolbar circles are just the numbers.
+function buildScratchSlots(host, kind, withExtras) {
+  host.textContent = '';
+  for (let n = 1; n <= SCRATCH_SLOTS; n++) {
+    const id = scratchKey(kind, n);
+    const slot = document.createElement('span');
+    slot.className = 'scratch-slot';
+    slot.dataset.id = id;
+    const num = document.createElement('button');
+    num.type = 'button';
+    num.className = 'scratch-num';
+    num.textContent = String(n);
+    num.addEventListener('click', () => openScratchpad(id));
+    slot.appendChild(num);
+    if (withExtras) {
+      const clear = document.createElement('button');
+      clear.type = 'button';
+      clear.className = 'scratch-slot-clear';
+      clear.title = `Clear ${scratchLabel(id).toLowerCase()}`;
+      clear.setAttribute('aria-label', clear.title);
+      clear.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+      clear.addEventListener('click', (e) => { e.stopPropagation(); clearScratchpad(id); });
+      slot.appendChild(clear);
+      const time = document.createElement('span');
+      time.className = 'scratch-slot-time';
+      time.setAttribute('aria-hidden', 'true');
+      slot.appendChild(time);
     }
-  });
-  const clearBtn = tile.querySelector('[data-role="clear"]');
-  if (clearBtn) {
-    clearBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      clearScratchpad(id);
-    });
+    host.appendChild(slot);
   }
 }
-refreshScratchTiles();
+for (const tile of el.scratchTiles) buildScratchSlots(tile.querySelector('[data-role="slots"]'), tile.dataset.scratch, true);
+
+// Repaints every circle (home tiles + toolbar) from scratchMeta: filled vs empty,
+// which one is open, save times. Cheap and synchronous — safe to call any time.
+function paintScratchSlots() {
+  const openKind = scratchKind(state.scratchId);
+  if (openKind && el.scratchBar.dataset.kind !== openKind) {
+    buildScratchSlots(el.scratchBar, openKind, false);
+    el.scratchBar.dataset.kind = openKind;
+  }
+  el.scratchBar.hidden = !openKind;
+  document.body.classList.toggle('scratch-open', !!openKind);
+  for (const slot of document.querySelectorAll('.scratch-slot')) {
+    const id = slot.dataset.id;
+    const meta = scratchMeta.get(id);
+    const current = id === state.scratchId;
+    const saved = meta ? scratchRelativeTime(meta.updatedAt) : 'Not saved yet';
+    slot.classList.toggle('is-filled', !!meta && !meta.empty);
+    slot.classList.toggle('is-saved', !!meta);
+    slot.classList.toggle('is-current', current);
+    const num = slot.querySelector('.scratch-num');
+    num.title = `${scratchLabel(id)} · ${current ? 'Open now' : saved}`;
+    num.setAttribute('aria-label', num.title);
+    if (current) num.setAttribute('aria-current', 'true'); else num.removeAttribute('aria-current');
+    const time = slot.querySelector('.scratch-slot-time');
+    if (time) time.textContent = meta ? scratchShortTime(meta.updatedAt) : '—';
+    const clear = slot.querySelector('.scratch-slot-clear');
+    if (clear) clear.hidden = !meta;
+  }
+}
+// Kept under its old name: goToHome() calls it so the "saved 5m ago" labels are fresh.
+function refreshScratchTiles() { paintScratchSlots(); }
+loadScratchMeta();
 
 /* ------------------------------------------------------------------ *
  * Export format toggle (XLSX | CSV)
@@ -1853,7 +1935,8 @@ function resetForDesign() {
 }
 
 async function startDesign(opts, label) {
-  const wasScratch = state.scratchId === 'design'; // dropping a file into an open design scratchpad keeps it bound to autosave (see leaveScratchpad's doc comment)
+  // Dropping a file into an open design pad keeps it bound to that pad's autosave (see leaveScratchpad's doc comment).
+  const wasScratch = scratchKind(state.scratchId) === 'design' ? state.scratchId : null;
   await leaveScratchpad();
   beginLoading(label, false);
   setLoading(20, 'Loading the design tools\u2026');
@@ -1864,7 +1947,9 @@ async function startDesign(opts, label) {
     await window.Design.enter(opts);
     state.fileHandle = opts.fileHandle || null;
     if (wasScratch) {
-      state.scratchId = 'design';
+      state.scratchId = wasScratch;
+      forgetScratchHistory(wasScratch);
+      paintScratchSlots();
       // A file dropped into an already-open scratchpad is tagged scratchpad_<name> so it's
       // clear the scratch slot now holds that file (Clear resets the title back to default).
       state.title = `scratchpad_${state.title}`;
@@ -1970,7 +2055,8 @@ function loadFileNow(file, password, fileHandle) {
 // the drop-a-file screen for the grid. Shared by opening a file and by
 // creating a blank spreadsheet, so both end up in exactly the same state.
 async function activateWorkbook(wb, name, isCSV, toastMessage, fileHandle) {
-  const wasScratch = state.scratchId === 'sheet'; // dropping a file into an open sheet scratchpad keeps it bound to autosave (see leaveScratchpad's doc comment)
+  // Dropping a file into an open sheet pad keeps it bound to that pad's autosave (see leaveScratchpad's doc comment).
+  const wasScratch = scratchKind(state.scratchId) === 'sheet' ? state.scratchId : null;
   await leaveScratchpad();
   leaveDesignMode();
   leaveTextMode();
@@ -2016,7 +2102,9 @@ async function activateWorkbook(wb, name, isCSV, toastMessage, fileHandle) {
   showToast(toastMessage);
   updateBookmarkStar(); // the sheet path needs this too (enterTextMode / startDesign already call it)
   if (wasScratch) {
-    state.scratchId = 'sheet';
+    state.scratchId = wasScratch;
+    forgetScratchHistory(wasScratch);
+    paintScratchSlots();
     // A file dropped into an already-open scratchpad is tagged scratchpad_<name> so it's
     // clear the scratch slot now holds that file (Clear resets the title back to default).
     state.title = `scratchpad_${state.title}`;
@@ -2540,7 +2628,8 @@ async function openTextFile(file, name, fileHandle) {
 }
 
 async function enterTextMode(doc) {
-  const wasScratch = state.scratchId === 'text'; // dropping a file into an open text scratchpad keeps it bound to autosave (see leaveScratchpad's doc comment)
+  // Dropping a file into an open text pad keeps it bound to that pad's autosave (see leaveScratchpad's doc comment).
+  const wasScratch = scratchKind(state.scratchId) === 'text' ? state.scratchId : null;
   await leaveScratchpad();
   leaveDesignMode();
   // Tear down whatever spreadsheet is on screen.
@@ -2615,7 +2704,9 @@ async function enterTextMode(doc) {
   showToast(doc.toast || `Opened "${doc.name}"`);
   updateBookmarkStar();
   if (wasScratch) {
-    state.scratchId = 'text';
+    state.scratchId = wasScratch;
+    forgetScratchHistory(wasScratch);
+    paintScratchSlots();
     // A file dropped into an already-open scratchpad is tagged scratchpad_<name> so it's
     // clear the scratch slot now holds that file (Clear resets the title back to default).
     state.title = `scratchpad_${state.title}`;
@@ -2826,9 +2917,9 @@ function clearTextDocument() {
   el.textScroll.scrollLeft = 0;
   // Clearing the scratchpad also drops any "scratchpad_<dropped file>" name it picked up,
   // back to the plain default (not for a regular text file opened outside the scratchpad).
-  if (state.scratchId === 'text' && state.title !== SCRATCH_DEFAULT_NAMES.text) {
-    state.title = SCRATCH_DEFAULT_NAMES.text;
-    state.originalFileName = SCRATCH_DEFAULT_NAMES.text;
+  if (scratchKind(state.scratchId) === 'text' && state.title !== scratchDefaultName(state.scratchId)) {
+    state.title = scratchDefaultName(state.scratchId);
+    state.originalFileName = state.title;
     el.fileName.textContent = state.title;
   }
   showToast('Cleared \u2014 Ctrl+Z brings it back', 2600);
@@ -3690,9 +3781,9 @@ function sheetIsBlank(ws, blankRef) {
 // Clearing the scratchpad also drops any "scratchpad_<dropped file>" name it picked up,
 // back to the plain default (not for a sheet opened outside the scratchpad).
 function dropScratchSheetPrefix() {
-  if (state.scratchId === 'sheet' && state.title !== SCRATCH_DEFAULT_NAMES.sheet) {
-    state.title = SCRATCH_DEFAULT_NAMES.sheet;
-    state.originalFileName = SCRATCH_DEFAULT_NAMES.sheet;
+  if (scratchKind(state.scratchId) === 'sheet' && state.title !== scratchDefaultName(state.scratchId)) {
+    state.title = scratchDefaultName(state.scratchId);
+    state.originalFileName = state.title;
     el.fileName.textContent = state.title;
   }
 }
