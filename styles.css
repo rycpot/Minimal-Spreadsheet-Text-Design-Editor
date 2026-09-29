@@ -2502,8 +2502,13 @@ body.mode-home .grid-wrapper.home-empty { margin-bottom: 12px; }
 
 /* One numbered circle per pad. Shared by the home tiles and the toolbar's
    #scratchBar; the colours come from --col-* (set per column / per data-kind). */
-.scratch-slots { display: flex; flex-wrap: wrap; gap: 4px 10px; }
-.scratch-slot { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 26px; }
+/* Six equal columns, each wide enough for its "45m ago" label; where the home columns
+   are too narrow for that (mid-size windows, before they stack), a tidy 3 x 2 grid. */
+.scratch-slots { display: grid; grid-template-columns: repeat(6, 44px); gap: 6px 8px; }
+@media (min-width: 961px) and (max-width: 1260px) {
+  .scratch-slots { grid-template-columns: repeat(3, 44px); }
+}
+.scratch-slot { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
 .scratch-num {
   display: grid;
   place-items: center;

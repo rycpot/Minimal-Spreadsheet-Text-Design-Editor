@@ -952,17 +952,17 @@ function scratchRelativeTime(iso) {
   if (d < 7) return `Saved ${d} day${d === 1 ? '' : 's'} ago`;
   return `Saved ${new Date(iso).toLocaleDateString()}`;
 }
-// The short form printed under each home-screen circle: "now", "5m", "3h", "2d", "Sep 3".
+// The short form printed under each home-screen circle: "now", "5m ago", "3h ago", "2d ago", "Sep 3".
 function scratchShortTime(iso) {
   const then = new Date(iso).getTime();
   if (!isFinite(then)) return '';
   const m = Math.round(Math.max(0, Date.now() - then) / 60000);
   if (m < 1) return 'now';
-  if (m < 60) return `${m}m`;
+  if (m < 60) return `${m}m ago`;
   const h = Math.round(m / 60);
-  if (h < 24) return `${h}h`;
+  if (h < 24) return `${h}h ago`;
   const d = Math.round(h / 24);
-  if (d < 7) return `${d}d`;
+  if (d < 7) return `${d}d ago`;
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
@@ -1032,6 +1032,15 @@ function paintScratchSlots() {
 // Kept under its old name: goToHome() calls it so the "saved 5m ago" labels are fresh.
 function refreshScratchTiles() { paintScratchSlots(); }
 loadScratchMeta();
+// Keep the "5m ago" labels counting while the home screen is showing: repaint every
+// 30 seconds (cheap — it only reads the in-memory scratchMeta), and straight away when
+// the tab comes back into view after being hidden.
+setInterval(() => {
+  if (document.visibilityState === 'visible' && document.body.classList.contains('mode-home')) paintScratchSlots();
+}, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') paintScratchSlots();
+});
 
 /* ------------------------------------------------------------------ *
  * Export format toggle (XLSX | CSV)
