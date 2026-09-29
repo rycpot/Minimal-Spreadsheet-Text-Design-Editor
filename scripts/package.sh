@@ -13,6 +13,6 @@ rm -rf dist
 mkdir -p dist
 zip -r -X -q "$out" . \
   -x '.git/*' '.github/*' 'scripts/*' 'dist/*' \
-     'README.md' 'SETUP.md' '.gitignore' '*.DS_Store'
+     'README.md' 'SETUP.md' 'CLAUDE.md' '.gitignore' '*.DS_Store'
 
 echo "$out"
