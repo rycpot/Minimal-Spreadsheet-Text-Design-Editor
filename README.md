@@ -32,7 +32,7 @@ The one optional feature that uses the network is **Import from Google Sheet**: 
 
 ![enter image description here](https://fonts.gstatic.com/s/i/productlogos/chrome_store/v7/192px.svg)
 
-INSTALL FROM CHROME WEBSTORE
+[INSTALL FROM CHROME WEBSTORE](https://chromewebstore.google.com/detail/ipibofmjfgkdjfanoainopimacngokjd)
 
 **From source (for developers)**
 1. Download or clone this repo.
