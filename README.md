@@ -20,7 +20,7 @@ A simple, offline Chrome extension for editing spreadsheets, text/code files, an
 
 - **Spreadsheets** — open `.xlsx`, `.csv`, `.tsv`, `.ods`, or Apple Numbers files, edit cells, add/delete rows and columns, use formulas (`=SUM(A1:A3)`), and save back. Password-protected `.xlsx` files are supported (decrypted locally, in your browser).
 - **Text & code files** — open any plain-text or code file in a lightweight editor with syntax highlighting.
-- **Design templates** — a simple canvas for combining images, text, and shapes, exportable as PNG/JPG.
+- **Design templates** — a simple canvas for combining images, text, and shapes, exportable as PNG/JPG. Text can have a soft **shadow** and a **background box** (with its own colour and opacity) to stay readable over pictures.
 
 ## Privacy
 

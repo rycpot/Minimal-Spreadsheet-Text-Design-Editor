@@ -1953,6 +1953,8 @@ body.mode-design #textStatus { display: none !important; }
   border: 1px solid #dfe6ee; border-radius: 6px; background: #fff; cursor: pointer;
 }
 .design-bar input[type="color"]:disabled { opacity: 0.4; cursor: not-allowed; }
+.db-range { width: 56px; accent-color: var(--accent); cursor: pointer; }
+.db-range:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .d-font-btn { min-width: 158px; max-width: 200px; justify-content: space-between; }
 .d-font-btn .d-font-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
