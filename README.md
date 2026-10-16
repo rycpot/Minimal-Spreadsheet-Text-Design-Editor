@@ -35,10 +35,10 @@ The one optional feature that uses the network is **Import from Google Sheet**: 
 [INSTALL FROM CHROME WEBSTORE](https://chromewebstore.google.com/detail/ipibofmjfgkdjfanoainopimacngokjd)
 
 **From source (for developers)**
-1. Download the zip from the [latest release](https://github.com/rycpot/Minimal-Spreadsheet-Text-Design-Editor/releases/latest) and unzip it.
+1. Download or clone this repo.
 2. Go to `chrome://extensions` in Chrome.
 3. Turn on **Developer mode** (top-right toggle).
-4. Click **Load unpacked** and select the unzipped folder.
+4. Click **Load unpacked** and select this folder.
 5. Click the extension's icon in your toolbar — it opens as a full browser tab.
 
 ## Basic usage
