@@ -3998,9 +3998,10 @@ const MIN_COL_PX = 28;
 //     breathing room (AUTO_EXTRA_PX: the cell's own padding, its border and
 //     1px of sub-pixel slack, which leaves ~7px after the longest value
 //     instead of ending flush against the line);
+//   - no column is ever narrower than DEFAULT_COL_PX: short values (or an
+//     empty column) leave it at the default width instead of shrinking it;
 //   - no column is ever wider than AUTO_MAX_COL_PX: anything longer is
-//     clipped with an ellipsis ("…"), same as every cell that doesn't fit;
-//   - empty column -> DEFAULT_COL_PX.
+//     clipped with an ellipsis ("…"), same as every cell that doesn't fit.
 // A hand-set width (drag, or the same width applied to several selected
 // columns) is stored on the sheet as { wpx, __manual: true } and wins over
 // all of the above; double-clicking a resize handle drops it again. Only
@@ -4009,7 +4010,6 @@ const MIN_COL_PX = 28;
 // were already stored in a loaded file are left exactly as they were (and
 // exported as such) but aren't used to size the view.
 const AUTO_MAX_COL_PX = 1000;
-const AUTO_MIN_COL_PX = 36;
 const AUTO_EXTRA_PX = 14;
 
 function getManualColWidthPx(ws, absCol) {
@@ -4067,7 +4067,7 @@ function applyColumnLayout(ws, range) {
     let px;
     if (manual) px = manual;
     else if (!widest[c]) px = DEFAULT_COL_PX;
-    else px = Math.min(AUTO_MAX_COL_PX, Math.max(AUTO_MIN_COL_PX, Math.ceil(widest[c]) + AUTO_EXTRA_PX));
+    else px = Math.min(AUTO_MAX_COL_PX, Math.max(DEFAULT_COL_PX, Math.ceil(widest[c]) + AUTO_EXTRA_PX));
     col.style.width = px + 'px';
   });
   syncGridWidth(table);
