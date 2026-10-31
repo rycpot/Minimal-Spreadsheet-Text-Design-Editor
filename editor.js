@@ -4423,6 +4423,14 @@ function attachGridListeners() {
         return;
       }
       td.blur();
+    } else if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing) {
+      // Commit the edit, then select the next cell to the right (Shift+Tab:
+      // left), like Google Sheets. blur() commits synchronously (see
+      // finishEditing), leaving the edited cell selected.
+      e.preventDefault();
+      e.stopPropagation();
+      td.blur();
+      moveSelectionByTab(e.shiftKey);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
@@ -5125,6 +5133,38 @@ function selectCell(r, c) {
   state.rangeSel = { r1: r, c1: c, r2: r, c2: c, type: 'cell' };
   state.headerAnchor = null;
   updateSelectionUI();
+}
+
+// Tab / Shift+Tab: select the cell one column to the right / left of the
+// current one, like Google Sheets. At the sheet's first or last column the
+// selection stays where it is. Scrolls the new cell into view, keeping it
+// clear of the sticky row/column headers.
+function moveSelectionByTab(back) {
+  if (!state.rangeSel) return;
+  const ws = activeSheetObj();
+  const range = getRange(ws);
+  const nCols = range.e.c - range.s.c + 1;
+  const { r1, c1 } = state.rangeSel;
+  const c = Math.max(0, Math.min(nCols - 1, c1 + (back ? -1 : 1)));
+  selectCell(r1, c);
+  const td = el.grid.querySelector(`td[data-r="${r1}"][data-c="${c}"]`);
+  if (td) scrollCellIntoView(td);
+}
+
+function scrollCellIntoView(td) {
+  const box = el.gridScroll;
+  const wrap = box.getBoundingClientRect();
+  const cell = td.getBoundingClientRect();
+  const rowHead = el.grid.querySelector('tbody th');
+  const colHead = el.grid.querySelector('thead th');
+  const left = wrap.left + box.clientLeft + (rowHead ? rowHead.getBoundingClientRect().width : 0);
+  const top = wrap.top + box.clientTop + (colHead ? colHead.getBoundingClientRect().height : 0);
+  const right = wrap.left + box.clientLeft + box.clientWidth;
+  const bottom = wrap.top + box.clientTop + box.clientHeight;
+  if (cell.left < left) box.scrollLeft -= left - cell.left;
+  else if (cell.right > right) box.scrollLeft += Math.min(cell.right - right, cell.left - left);
+  if (cell.top < top) box.scrollTop -= top - cell.top;
+  else if (cell.bottom > bottom) box.scrollTop += Math.min(cell.bottom - bottom, cell.top - top);
 }
 
 function setRangeSelection(r1, c1, r2, c2, type) {
@@ -6568,6 +6608,16 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Delete' || e.key === 'Backspace') {
     e.preventDefault();
     clearSelectedCells();
+    return;
+  }
+
+  // Tab moves one cell right (Shift+Tab: left) instead of moving browser
+  // focus — but only when focus isn't on some other control (e.g. a tool
+  // bar button), so the tool bar stays reachable from the keyboard.
+  if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (ae && ae !== document.body && !el.grid.contains(ae)) return;
+    e.preventDefault();
+    moveSelectionByTab(e.shiftKey);
     return;
   }
 
